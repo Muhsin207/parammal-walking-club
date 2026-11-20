@@ -859,7 +859,7 @@
         </div>
 
         <div style="margin-top:12px;">
-          <button type="button" class="btn-gold" id="toggleGpsBtn">Start Live Walk</button>
+          <button type="button" class="btn-gold" id="toggleGpsBtn">Login to Start Walking</button>
         </div>
       </section>
 
@@ -1122,7 +1122,7 @@
         <button type="button" class="login-tab" id="registerTab" data-login-tab="register">Create Account</button>
       </div>
       <p style="font-size:11px; line-height:1.45; color:var(--muted); margin-bottom:12px;">
-        Member display names and walk dates, routes, and distances are visible publicly.
+        Sign in or create an account before starting a live walk. Member display names and walk dates, routes, and distances are visible publicly.
       </p>
 
       <form id="memberLoginForm">
@@ -1860,6 +1860,20 @@
           openMemberLogin();
           return;
         }
+        gpsBtn.disabled = true;
+        try {
+          await apiRequest("/api/auth/me");
+        } catch (error) {
+          if (error.status === 401) {
+            await syncMemberSession();
+            openMemberLogin();
+          } else {
+            displayBackendError("Could not verify member login", error);
+          }
+          return;
+        } finally {
+          gpsBtn.disabled = false;
+        }
         if (!("geolocation" in navigator)) {
           gpsStatusLabel.textContent = "GPS unavailable";
           return;
@@ -1974,6 +1988,7 @@
         fName.readOnly = true;
         fGoal.value = "30";
         document.getElementById("memberAccountBtn").textContent = "Login";
+        gpsBtn.textContent = "Login to Start Walking";
         adminEditorBox.style.display = "none";
         if (document.getElementById("pane-admin").classList.contains("active")) {
           history.replaceState(null, "", `${location.pathname}${location.search}`);
@@ -1993,6 +2008,7 @@
       fName.readOnly = true;
       fGoal.value = String(currentMember.monthlyGoal);
       document.getElementById("memberAccountBtn").textContent = `👤 ${currentMember.name}`;
+      if (!isWalking) gpsBtn.textContent = "Start Live Walk";
       memberLoginBackdrop.classList.remove("open");
       await refreshStats();
 

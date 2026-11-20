@@ -938,21 +938,28 @@
           <div class="card-title">Walking Places &amp; Routes</div>
         </div>
         <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
-          Choose a route to use for your next GPS-tracked walk. For current road-by-road walking directions from Legacy AUP School to Palode town, open Google Maps.
+          Set any starting point and destination for road-by-road walking directions in Google Maps. The selected route name will be used when you log your walk.
         </p>
         <div class="log-item">
           <div>
-            <div class="log-title">Legacy AUP School, Parammal → Palode Town</div>
-            <div class="log-sub">Walking directions via roads near Attasseri, Mannarkkad</div>
+            <div class="log-title">Walking Directions</div>
+            <div class="log-sub">Google Maps will open with walking mode enabled.</div>
           </div>
-          <a
-            class="btn-soft"
-            href="https://www.google.com/maps/dir/?api=1&amp;origin=10.9535%2C76.4325&amp;destination=Palode%2C%20Attasseri%2C%20Mannarkkad%2C%20Kerala%2C%20India&amp;travelmode=walking"
-            target="_blank"
-            rel="noopener noreferrer"
-            style="padding:6px 10px; font-size:11.5px; white-space:nowrap;"
-          >Open directions</a>
         </div>
+        <form id="walkingDirectionsForm" class="grid-2" style="margin:10px 0 14px;">
+          <div>
+            <label for="directionsOrigin">Starting point</label>
+            <input id="directionsOrigin" type="text" maxlength="55" value="Legacy AUP School, Parammal" required />
+          </div>
+          <div>
+            <label for="directionsDestination">Destination</label>
+            <input id="directionsDestination" type="text" maxlength="55" value="Palode Town, Attasseri, Mannarkkad, Kerala" required />
+          </div>
+          <div class="full">
+            <button type="submit" class="btn-maroon" style="width:100%;">Get Walking Directions</button>
+            <p id="directionsStatus" role="status" style="font-size:11px; color:var(--muted); margin-top:6px;"></p>
+          </div>
+        </form>
         <div id="routesContainer"></div>
       </section>
     </div>
@@ -1772,6 +1779,32 @@
       gpsRouteSelect.value = route;
       walkingRouteSelect.value = route;
       showPane("pane-track");
+    });
+
+    document.getElementById("walkingDirectionsForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const origin = document.getElementById("directionsOrigin").value.trim();
+      const destination = document.getElementById("directionsDestination").value.trim();
+      const status = document.getElementById("directionsStatus");
+
+      if (!origin || !destination) {
+        status.textContent = "Enter both a starting point and a destination.";
+        return;
+      }
+
+      const route = `${origin} to ${destination}`;
+      addWalkingRouteOption(route);
+      gpsRouteSelect.value = route;
+      walkingRouteSelect.value = route;
+      renderRoutes(cachedLogs);
+
+      const directionsUrl = new URL("https://www.google.com/maps/dir/");
+      directionsUrl.searchParams.set("api", "1");
+      directionsUrl.searchParams.set("origin", origin);
+      directionsUrl.searchParams.set("destination", destination);
+      directionsUrl.searchParams.set("travelmode", "walking");
+      window.open(directionsUrl.href, "_blank", "noopener,noreferrer");
+      status.textContent = `Selected walking route: ${route}`;
     });
 
     async function refreshStats() {

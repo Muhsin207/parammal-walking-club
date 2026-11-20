@@ -14,6 +14,7 @@ from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import JSON, Uuid, event, text
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 ROOT = Path(__file__).resolve().parent
@@ -95,7 +96,9 @@ class Member(db.Model):
     __tablename__ = "members"
 
     id = db.Column(Uuid(as_uuid=True), primary_key=True)
-    email = db.Column(db.String(320), nullable=False, unique=True)
+    email = db.Column(db.String(320), nullable=True, unique=True)
+    mobile_number = db.Column(db.String(15), nullable=True, unique=True)
+    password_hash = db.Column(db.String(255), nullable=True)
     display_name = db.Column(db.String(80), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     monthly_goal_km = db.Column(db.Numeric(6, 2), nullable=False, default=30)
@@ -143,6 +146,17 @@ def initialize_database():
         if db_initialized:
             return
         db.create_all()
+        member_columns = {
+            row[1] for row in db.session.execute(text("PRAGMA table_info(members)")).all()
+        }
+        if "mobile_number" not in member_columns:
+            db.session.execute(text("ALTER TABLE members ADD COLUMN mobile_number VARCHAR(15)"))
+        if "password_hash" not in member_columns:
+            db.session.execute(text("ALTER TABLE members ADD COLUMN password_hash VARCHAR(255)"))
+        db.session.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_members_mobile_number "
+            "ON members(mobile_number) WHERE mobile_number IS NOT NULL"
+        ))
         db.session.execute(
             sqlite_insert(SiteContent)
             .values(
@@ -203,6 +217,13 @@ def normalized_email(value):
     return email
 
 
+def normalized_mobile(value):
+    mobile = re.sub(r"\D", "", str(value or "").strip())
+    if not re.fullmatch(r"[0-9]{10,15}", mobile):
+        return None
+    return mobile
+
+
 def valid_http_url(value):
     parsed = urlsplit(str(value or "").strip())
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
@@ -251,54 +272,55 @@ def health():
     return jsonify({"status": "ok"})
 
 
-@app.post("/api/auth/request-link")
-def request_magic_link():
+@app.post("/api/auth/register")
+def register_member():
     payload = request.get_json(silent=True) or {}
-    email = normalized_email(payload.get("email"))
-    mode = payload.get("mode")
+    mobile = normalized_mobile(payload.get("mobile"))
     display_name = str(payload.get("displayName") or "").strip()
-    if not email or mode not in {"login", "register"}:
-        return api_error("Enter a valid email address.", 400)
-    if mode == "register" and not 1 <= len(display_name) <= 80:
+    password = str(payload.get("password") or "")
+    if not mobile:
+        return api_error("Enter a valid mobile number with 10 to 15 digits.", 400)
+    if not 1 <= len(display_name) <= 80:
         return api_error("Enter a display name between 1 and 80 characters.", 400)
-    if environment == "production" and not app.config["MAIL_SERVER"]:
-        return api_error("Email delivery is not configured on the server.", 503)
+    if len(password) < 8 or len(password) > 128:
+        return api_error("Password must contain 8 to 128 characters.", 400)
+    if Member.query.filter_by(mobile_number=mobile).one_or_none() is not None:
+        return api_error("An account with this mobile number already exists.", 409)
 
-    member = Member.query.filter_by(email=email).one_or_none()
-    if member is None and mode == "register":
-        member = Member(id=uuid.uuid4(), email=email, display_name=display_name)
-        db.session.add(member)
-        db.session.commit()
-    if member is None:
-        return jsonify({"message": "If this account can sign in, a link will be sent to its email."})
-
-    recent_requests = MagicLinkToken.query.filter(
-        MagicLinkToken.member_id == member.id,
-        MagicLinkToken.created_at >= datetime.now(timezone.utc) - magic_link_rate_window,
-    ).count()
-    if recent_requests >= magic_link_max_requests:
-        return jsonify({"message": "If this account can sign in, a link will be sent to its email."})
-
-    raw_token = secrets.token_urlsafe(32)
-    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
-    token_row = MagicLinkToken(
+    member = Member(
         id=uuid.uuid4(),
-        member_id=member.id,
-        token_hash=token_hash,
-        expires_at=datetime.now(timezone.utc) + magic_link_max_age,
+        email=f"{mobile}@members.local",
+        mobile_number=mobile,
+        display_name=display_name,
+        password_hash=generate_password_hash(password),
     )
-    db.session.add(token_row)
+    db.session.add(member)
     db.session.commit()
+    session.clear()
+    session.permanent = True
+    session["member_id"] = str(member.id)
+    session["session_version"] = member.session_version
+    db.session.commit()
+    return jsonify(member_json(member))
 
-    link = f"{app_base_url}/auth/verify?token={raw_token}"
-    try:
-        send_magic_link(email, link)
-    except Exception:
-        db.session.delete(token_row)
-        db.session.commit()
-        app.logger.exception("Could not send a sign-in email")
-        return api_error("The sign-in email could not be sent. Please try again later.", 503)
-    return jsonify({"message": "If this account can sign in, a link will be sent to its email."})
+
+@app.post("/api/auth/login")
+def login_member():
+    payload = request.get_json(silent=True) or {}
+    mobile = normalized_mobile(payload.get("mobile"))
+    password = str(payload.get("password") or "")
+    if not mobile or not password:
+        return api_error("Enter your mobile number and password.", 400)
+    member = Member.query.filter_by(mobile_number=mobile).one_or_none()
+    if member is None or not member.password_hash or not check_password_hash(member.password_hash, password):
+        return api_error("Invalid mobile number or password.", 401)
+
+    session.clear()
+    session.permanent = True
+    session["member_id"] = str(member.id)
+    session["session_version"] = member.session_version
+    db.session.commit()
+    return jsonify(member_json(member))
 
 
 VERIFY_PAGE = """

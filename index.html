@@ -1097,10 +1097,14 @@
       <form id="memberLoginForm">
         <div style="display:grid; gap:10px;">
           <div>
-            <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" autocomplete="email" required />
+            <label for="loginMobile">Mobile number</label>
+            <input type="tel" id="loginMobile" autocomplete="tel" inputmode="tel" required />
           </div>
-          <button type="submit" class="btn-maroon" style="width:100%;">Email me a sign-in link</button>
+          <div>
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" autocomplete="current-password" minlength="8" required />
+          </div>
+          <button type="submit" class="btn-maroon" style="width:100%;">Login</button>
         </div>
       </form>
 
@@ -1111,14 +1115,18 @@
             <input type="text" id="registerName" autocomplete="name" required />
           </div>
           <div>
-            <label for="registerEmail">Email</label>
-            <input type="email" id="registerEmail" autocomplete="email" required />
+            <label for="registerMobile">Mobile number</label>
+            <input type="tel" id="registerMobile" autocomplete="tel" inputmode="tel" required />
+          </div>
+          <div>
+            <label for="registerPassword">Password</label>
+            <input type="password" id="registerPassword" autocomplete="new-password" minlength="8" maxlength="128" required />
           </div>
           <label style="display:flex; align-items:flex-start; gap:7px; font-size:11px; line-height:1.4;">
             <input type="checkbox" id="registerPublicConsent" required style="width:auto; margin-top:2px;" />
             I agree that my display name and walk records will be public.
           </label>
-          <button type="submit" class="btn-maroon" style="width:100%;">Create account and email link</button>
+          <button type="submit" class="btn-maroon" style="width:100%;">Create account</button>
         </div>
       </form>
 
@@ -1923,17 +1931,18 @@
     document.getElementById("memberRegisterForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const name = document.getElementById("registerName").value.trim();
-      const email = document.getElementById("registerEmail").value.trim().toLowerCase();
+      const mobile = document.getElementById("registerMobile").value.trim();
+      const password = document.getElementById("registerPassword").value;
       const button = e.currentTarget.querySelector('button[type="submit"]');
       button.disabled = true;
       memberLoginError.textContent = "";
       try {
-        const result = await apiRequest("/api/auth/request-link", {
+        const result = await apiRequest("/api/auth/register", {
           method: "POST",
-          body: { mode: "register", email, displayName: name }
+          body: { mobile, password, displayName: name }
         });
-        memberLoginError.textContent = result.message;
-        document.getElementById("memberRegisterForm").reset();
+        currentMember = result;
+        await syncMemberSession();
       } catch (error) {
         memberLoginError.textContent = error.message || "Could not create the account.";
       } finally {
@@ -1943,19 +1952,20 @@
 
     document.getElementById("memberLoginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+      const mobile = document.getElementById("loginMobile").value.trim();
+      const password = document.getElementById("loginPassword").value;
       const button = e.currentTarget.querySelector('button[type="submit"]');
       button.disabled = true;
       memberLoginError.textContent = "";
       try {
-        const result = await apiRequest("/api/auth/request-link", {
+        const result = await apiRequest("/api/auth/login", {
           method: "POST",
-          body: { mode: "login", email }
+          body: { mobile, password }
         });
-        memberLoginError.textContent = result.message;
-        document.getElementById("memberLoginForm").reset();
+        currentMember = result;
+        await syncMemberSession();
       } catch (error) {
-        memberLoginError.textContent = error.message || "Could not send the sign-in link.";
+        memberLoginError.textContent = error.message || "Could not sign in.";
       } finally {
         button.disabled = false;
       }

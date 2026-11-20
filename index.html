@@ -2160,17 +2160,28 @@
 
     async function initializeApp() {
       renderHeaderBanner();
+      const urlParams = new URLSearchParams(window.location.search);
+      const loginRequested = urlParams.get("login") === "1";
       try {
         await apiRequest("/api/health");
         await loadSiteContent();
         await syncMemberSession();
         renderHeaderBanner();
-        openAnnouncementModal(false);
+        if (loginRequested) {
+          openMemberLogin();
+        } else {
+          openAnnouncementModal(false);
+        }
         if (window.location.hash.toLowerCase() === "#admin") openAdminPanel();
-        const authResult = new URLSearchParams(window.location.search).get("auth");
+        const authResult = urlParams.get("auth");
         if (authResult === "verified") showAppStatus("Sign-in successful.");
         if (authResult === "expired") showAppStatus("That sign-in link is expired or has already been used. Request a new link.");
-        if (authResult) history.replaceState(null, "", `${location.pathname}${window.location.hash}`);
+        if (loginRequested || authResult) {
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete("login");
+          cleanUrl.searchParams.delete("auth");
+          history.replaceState(null, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+        }
       } catch (error) {
         displayBackendError("Could not initialize the app", error);
         if (window.location.hash.toLowerCase() === "#admin") openAdminPanel();

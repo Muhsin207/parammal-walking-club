@@ -138,6 +138,17 @@ class SiteContent(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 
+DEFAULT_ANNOUNCEMENT_CONTENT = {
+    "enabled": True,
+    "titleEn": "",
+    "titleMl": "",
+    "msgEn": "",
+    "msgMl": "ചെറിയ ചുവടുകൾ, വലിയ മാറ്റങ്ങൾ.",
+    "primaryLabel": "Learn More",
+    "linkUrl": "",
+}
+
+
 def initialize_database():
     global db_initialized
     if db_initialized:
@@ -161,10 +172,20 @@ def initialize_database():
             sqlite_insert(SiteContent)
             .values(
                 id="main",
-                content={"bannerMode": "auto", "slides": [], "announcement": {"enabled": False}},
+                content={
+                    "bannerMode": "auto",
+                    "slides": [],
+                    "announcement": dict(DEFAULT_ANNOUNCEMENT_CONTENT),
+                },
             )
             .on_conflict_do_nothing(index_elements=["id"])
         )
+        site_content = db.session.get(SiteContent, "main")
+        if site_content is not None and site_content.content.get("announcement") == {"enabled": False}:
+            site_content.content = {
+                **site_content.content,
+                "announcement": dict(DEFAULT_ANNOUNCEMENT_CONTENT),
+            }
         db.session.commit()
         db_initialized = True
 

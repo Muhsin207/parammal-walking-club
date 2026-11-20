@@ -7,7 +7,7 @@
   <title>Parammal Walking Club — Ward Health & Distance Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@500;700&family=Noto+Serif+Malayalam:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
@@ -587,6 +587,17 @@
       margin-bottom: 12px;
     }
 
+    .announcement-logo {
+      display: block;
+      width: 82px;
+      height: 82px;
+      object-fit: cover;
+      border: 3px solid var(--gold);
+      border-radius: 50%;
+      margin: 4px auto 14px;
+      background: #fff;
+    }
+
     .ann-body-en {
       font-size: 13px;
       line-height: 1.45;
@@ -595,8 +606,11 @@
     }
 
     .ann-body-ml {
-      font-size: 12.5px;
-      line-height: 1.5;
+      font-family: "Noto Serif Malayalam", "Noto Sans Malayalam", serif;
+      font-size: 20px;
+      font-weight: 700;
+      font-style: italic;
+      line-height: 1.7;
       color: #FFE484;
       margin-bottom: 16px;
     }
@@ -605,6 +619,10 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
+    }
+
+    .ann-actions.single-action {
+      grid-template-columns: 1fr;
     }
 
     .ann-btn-gold {
@@ -1053,11 +1071,12 @@
   </main>
 
   <!-- Optional Announcement Pop-Up Modal -->
-  <div class="modal-backdrop" id="annModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="annModalTitle">
+  <div class="modal-backdrop" id="annModalBackdrop" role="dialog" aria-modal="true" aria-label="Walking Club message" aria-describedby="annModalBodyMl">
     <div class="announcement-modal">
       <button type="button" class="modal-close" id="closeAnnX" aria-label="Close">✕</button>
-      <div class="ann-heading" id="annModalTitle">📢 ANNOUNCEMENT</div>
-      <div class="ann-heading-ml" id="annModalTitleMl">അറിയിപ്പ്</div>
+      <img class="announcement-logo" src="/static/posters/parammal-walking-club-logo.jpg" alt="Parammal Walking Club logo" />
+      <div class="ann-heading" id="annModalTitle"></div>
+      <div class="ann-heading-ml" id="annModalTitleMl"></div>
 
       <p class="ann-body-en" id="annModalBodyEn"></p>
       <p class="ann-body-ml" id="annModalBodyMl"></p>
@@ -1201,11 +1220,11 @@
     ];
 
     const defaultAnnouncement = {
-      enabled: false,
-      titleEn: "📢 ANNOUNCEMENT",
-      titleMl: "അറിയിപ്പ്",
-      msgEn: "🏆 MEGA SUNDAY WALK: Join us at Legacy AUP School this Sunday at 6:30 AM! Free health checkup & refreshments for all participants.",
-      msgMl: "ഈ ഞായറാഴ്ച രാവിലെ 6:30-ന് ലെഗസി എ.യു.പി സ്കൂളിൽ നടക്കുന്ന മെഗാ നടത്തത്തിൽ പങ്കാളികളാകൂ",
+      enabled: true,
+      titleEn: "",
+      titleMl: "",
+      msgEn: "",
+      msgMl: "ചെറിയ ചുവടുകൾ, വലിയ മാറ്റങ്ങൾ.",
       primaryLabel: "Learn More",
       linkUrl: ""
     };
@@ -1416,11 +1435,22 @@
       annState = { ...defaultAnnouncement, ...siteContent.announcement };
       if (!force && !annState.enabled) return;
 
-      document.getElementById("annModalTitle").textContent = annState.titleEn || "📢 ANNOUNCEMENT";
-      document.getElementById("annModalTitleMl").textContent = annState.titleMl || "അറിയിപ്പ്";
-      document.getElementById("annModalBodyEn").textContent = annState.msgEn || "";
-      document.getElementById("annModalBodyMl").textContent = annState.msgMl || "";
-      document.getElementById("annLearnMoreBtn").textContent = annState.primaryLabel || "Learn More";
+      const titleEn = document.getElementById("annModalTitle");
+      const titleMl = document.getElementById("annModalTitleMl");
+      const bodyEn = document.getElementById("annModalBodyEn");
+      const bodyMl = document.getElementById("annModalBodyMl");
+      const learnMoreButton = document.getElementById("annLearnMoreBtn");
+      titleEn.textContent = annState.titleEn || "";
+      titleEn.style.display = annState.titleEn ? "" : "none";
+      titleMl.textContent = annState.titleMl || "";
+      titleMl.style.display = annState.titleMl ? "" : "none";
+      bodyEn.textContent = annState.msgEn || "";
+      bodyEn.style.display = annState.msgEn ? "" : "none";
+      bodyMl.textContent = annState.msgMl || "";
+      bodyMl.style.display = annState.msgMl ? "" : "none";
+      learnMoreButton.textContent = annState.primaryLabel || "Learn More";
+      learnMoreButton.style.display = annState.linkUrl ? "" : "none";
+      document.querySelector(".ann-actions").classList.toggle("single-action", !annState.linkUrl);
       annModal.classList.add("open");
     }
 

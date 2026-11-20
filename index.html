@@ -1,0 +1,2000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#6B0F3B" />
+  <title>Parammal Walking Club — Ward Health & Distance Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --maroon-dark: #450624;
+      --maroon: #781042;
+      --magenta: #A4185B;
+      --gold: #F4C414;
+      --gold-soft: #FFF8DC;
+      --cream: #FAF6F8;
+      --card: #FFFFFF;
+      --text: #1E161B;
+      --muted: #685961;
+      --border: #E9DCE2;
+      --green: #15803D;
+      --green-bg: #DCFCE7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Malayalam', system-ui, sans-serif;
+    }
+
+    body {
+      background: var(--cream);
+      color: var(--text);
+      padding-bottom: 84px;
+    }
+
+    /* Top Poster & Slider Header */
+    .hero {
+      background: radial-gradient(circle at 80% 15%, var(--magenta), var(--maroon) 52%, var(--maroon-dark));
+      color: #fff;
+      padding: 14px 14px 48px;
+      border-bottom-left-radius: 26px;
+      border-bottom-right-radius: 26px;
+      position: relative;
+    }
+
+    .hero-inner {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .club-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .club-badge {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #fff;
+      color: var(--maroon-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      line-height: 1.05;
+      border: 2px solid var(--gold);
+      flex-shrink: 0;
+    }
+
+    .club-badge small {
+      font-size: 7px;
+      color: var(--maroon);
+      letter-spacing: 0.4px;
+    }
+
+    .club-title {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      line-height: 1.15;
+    }
+
+    .club-sub {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.88);
+      margin-top: 2px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .admin-pill {
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: #fff;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .notice-trigger {
+      background: var(--gold);
+      color: var(--maroon-dark);
+      border: none;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* Mode 1: 1-Day Inauguration Poster Section */
+    .inaugural-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--gold);
+      font-weight: 700;
+      margin: 6px 0 10px;
+      padding: 0 4px;
+    }
+
+    .guests-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .guest-box {
+      background: rgba(255, 255, 255, 0.11);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 14px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+
+    .guest-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      margin: 0 auto 5px;
+      background: #fff;
+      color: var(--maroon-dark);
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--gold);
+      overflow: hidden;
+    }
+
+    .guest-name {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+    }
+
+    .guest-role {
+      font-size: 9.5px;
+      color: rgba(255, 255, 255, 0.85);
+      margin-top: 2px;
+      line-height: 1.25;
+    }
+
+    /* Mode 2: Post-Inauguration Photo Slideshow */
+    .slider-wrap {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1.5px solid rgba(244, 196, 20, 0.55);
+      background: #2C0417;
+      height: 175px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+    }
+
+    .slide-track {
+      display: flex;
+      height: 100%;
+      transition: transform 0.45s ease;
+    }
+
+    .slide-item {
+      min-width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .slide-item img, .slide-item svg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .slide-caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 22px 12px 10px;
+      background: linear-gradient(transparent, rgba(25, 2, 13, 0.88));
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .slide-tag {
+      background: var(--gold);
+      color: var(--maroon-dark);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .slide-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      z-index: 4;
+    }
+
+    .slide-prev { left: 8px; }
+    .slide-next { right: 8px; }
+
+    .slide-dots {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      display: flex;
+      gap: 5px;
+      z-index: 4;
+    }
+
+    .slide-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.45);
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .slide-dot.active {
+      background: var(--gold);
+      width: 16px;
+      border-radius: 999px;
+    }
+
+    /* Main Content Cards */
+    .main {
+      max-width: 640px;
+      margin: -30px auto 0;
+      padding: 0 12px;
+      position: relative;
+      z-index: 5;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 15px;
+      margin-bottom: 12px;
+      box-shadow: 0 3px 12px rgba(69, 6, 36, 0.06);
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--maroon-dark);
+    }
+
+    .stats-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .stat-num {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      margin-top: 2px;
+    }
+
+    .goal-wrap {
+      margin-top: 12px;
+    }
+
+    .goal-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .bar-bg {
+      height: 8px;
+      background: #EFE5EA;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--maroon), var(--gold));
+      transition: width 0.3s ease;
+    }
+
+    .btn-gold {
+      width: 100%;
+      background: var(--gold);
+      color: var(--maroon-dark);
+      border: none;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(244, 196, 20, 0.28);
+    }
+
+    .btn-stop {
+      width: 100%;
+      background: #DC2626;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .live-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--maroon-dark);
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    #wardMap {
+      height: 175px;
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      z-index: 1;
+    }
+
+    /* Form & Admin Controls */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 13.5px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 64px;
+      resize: vertical;
+    }
+
+    .btn-maroon {
+      background: var(--maroon);
+      color: #fff;
+      border: none;
+      border-radius: 11px;
+      padding: 11px 14px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-soft {
+      background: #F4EBF0;
+      color: var(--maroon-dark);
+      border: none;
+      border-radius: 11px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--gold-soft);
+      border: 1px solid #F0D875;
+      padding: 11px 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      gap: 10px;
+    }
+
+    .toggle-row strong {
+      font-size: 13px;
+      color: var(--maroon-dark);
+      display: block;
+    }
+
+    .toggle-row span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .slide-admin-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: #FAF7F9;
+    }
+
+    .slide-thumb {
+      width: 54px;
+      height: 36px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #3B0720;
+      flex-shrink: 0;
+    }
+
+    .log-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+
+    .log-item:last-child { border-bottom: none; }
+    .log-title { font-size: 13px; font-weight: 700; }
+    .log-sub { font-size: 11px; color: var(--muted); }
+    .km-tag {
+      background: var(--green-bg);
+      color: var(--green);
+      font-weight: 800;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Optional Announcement Pop-up Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 4, 15, 0.68);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 120;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .announcement-modal {
+      width: 100%;
+      max-width: 390px;
+      background: linear-gradient(160deg, #56092E, #2E0317);
+      color: #fff;
+      border: 2px solid var(--gold);
+      border-radius: 22px;
+      padding: 18px 16px 16px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+      position: relative;
+      text-align: center;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .ann-heading {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .ann-heading-ml {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+
+    .ann-body-en {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .ann-body-ml {
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #FFE484;
+      margin-bottom: 16px;
+    }
+
+    .ann-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .ann-btn-gold {
+      background: var(--gold);
+      color: var(--maroon-dark);
+      border: none;
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .ann-btn-dismiss {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 7px 4px calc(7px + env(safe-area-inset-bottom));
+      z-index: 60;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 3px 2px;
+    }
+
+    .nav-btn.active { color: var(--maroon); }
+    .nav-ico { font-size: 17px; line-height: 1; }
+
+    .member-pill {
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .login-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(69, 6, 36, 0.82);
+      backdrop-filter: blur(5px);
+    }
+
+    .login-backdrop.open {
+      display: flex;
+    }
+
+    .login-card {
+      width: min(420px, 100%);
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+      padding: 18px;
+    }
+
+    .login-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 14px;
+      padding: 4px;
+      border-radius: 12px;
+      background: var(--cream);
+    }
+
+    .login-tab {
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 800;
+      padding: 9px;
+      cursor: pointer;
+    }
+
+    .login-tab.active {
+      background: #fff;
+      color: var(--maroon);
+      box-shadow: 0 2px 8px rgba(69, 6, 36, 0.08);
+    }
+
+    .login-error {
+      min-height: 18px;
+      color: #B91C1C;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .app-status {
+      max-width: 640px;
+      margin: 0 auto 10px;
+      padding: 10px 12px;
+      border: 1px solid #F0D875;
+      border-radius: 12px;
+      background: var(--gold-soft);
+      color: var(--maroon-dark);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 440px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .stat-num { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top header with an automatically rotating poster carousel -->
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-top">
+        <div class="club-brand">
+          <div class="club-badge">
+            PWC
+            <small>WARD</small>
+          </div>
+          <div>
+            <div class="club-title">PARAMMAL WALKING CLUB</div>
+            <div class="club-sub">Thachanattukara Panchayat • Ward Health</div>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button type="button" class="member-pill" id="memberAccountBtn" title="Member account">Login</button>
+          <button type="button" class="notice-trigger" id="reopenNoticeBtn" title="View Announcement">📢</button>
+        </div>
+      </div>
+
+      <!-- Optional fixed inauguration poster view -->
+      <div id="inaugurationPosterSection">
+        <div class="inaugural-bar">
+          <span>Inaugurated by • 21 Nov 2026</span>
+          <span>Legacy AUP School, Parammal</span>
+        </div>
+
+        <div class="guests-row">
+          <div class="guest-box">
+            <div class="guest-avatar">CS</div>
+            <div class="guest-name">CP Subair</div>
+            <div class="guest-role">Ward Member</div>
+          </div>
+          <div class="guest-box">
+            <div class="guest-avatar">AA</div>
+            <div class="guest-name">Anu Anjoom</div>
+            <div class="guest-role">SHO, Nattukal</div>
+          </div>
+          <div class="guest-box">
+            <div class="guest-avatar">AJ</div>
+            <div class="guest-name">Abdul Jaleel CP</div>
+            <div class="guest-role">Pharmacist &amp; Patient Counsellor</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Automatically rotating photo-poster slideshow -->
+      <div id="photoSliderSection" style="display:none;">
+        <div class="slider-wrap" id="sliderWrap">
+          <div class="slide-dots" id="slideDots"></div>
+          <button type="button" class="slide-nav slide-prev" id="prevSlideBtn" aria-label="Previous slide">‹</button>
+          <button type="button" class="slide-nav slide-next" id="nextSlideBtn" aria-label="Next slide">›</button>
+          <div class="slide-track" id="slideTrack"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div id="appStatus" class="app-status" role="status" style="display:none;"></div>
+
+    <!-- TAB 1: TRACK -->
+    <div id="pane-track" class="tab-pane active">
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title" id="progressTitle">Club Walking Progress</div>
+          <span style="font-size:11px; color:var(--muted); font-weight:700;" id="walkerBadge"></span>
+        </div>
+
+        <div class="stats-3">
+          <div>
+            <div class="stat-label">Total Distance</div>
+            <div class="stat-num" id="sumKm">0.00 km</div>
+          </div>
+          <div>
+            <div class="stat-label">Steps</div>
+            <div class="stat-num" id="sumSteps">0</div>
+          </div>
+          <div>
+            <div class="stat-label">Est. Calories</div>
+            <div class="stat-num" id="sumCal">0 kcal</div>
+          </div>
+        </div>
+
+        <div class="goal-wrap">
+          <div class="goal-meta">
+            <span>Monthly Goal: <strong id="goalDisplay">30 km</strong></span>
+            <strong style="color:var(--maroon);" id="goalPctDisplay">0%</strong>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill" id="goalBar"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <button type="button" class="btn-gold" id="toggleGpsBtn">Start Live Walk</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="live-strip">
+          <span>📍 Live GPS Tracking: <span id="gpsTimer">00:00</span> / <span id="gpsDist">0.00 km</span></span>
+          <span style="font-size:11px; color:var(--muted);" id="gpsStatusLabel">Ready</span>
+        </div>
+        <div id="wardMap"></div>
+        <div style="font-size:11.5px; color:var(--muted); margin-top:7px;">
+          Legacy AUP School, Parammal, Thachanattukara
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">Log Walk Distance</div>
+        </div>
+        <form id="walkForm" novalidate>
+          <div class="grid-2">
+            <div>
+              <label for="fName">Walker Name</label>
+              <input type="text" id="fName" placeholder="Your name" required />
+            </div>
+            <div>
+              <label for="fRoute">Ward Route</label>
+              <select id="fRoute">
+                <option value="Legacy AUP School Loop, Parammal">Legacy AUP School Loop, Parammal</option>
+                <option value="Parammal - Thachanattukara Road">Parammal - Thachanattukara Road</option>
+                <option value="Morning Ward Walk">Morning Ward Walk</option>
+                <option value="Evening Neighbourhood Walk">Evening Neighbourhood Walk</option>
+              </select>
+            </div>
+            <div>
+              <label for="fKm">Distance (km)</label>
+              <input type="number" id="fKm" step="0.05" min="0.05" max="100" placeholder="e.g., 1.50" required />
+            </div>
+            <div>
+              <label for="fMins">Duration (mins)</label>
+              <input type="number" id="fMins" min="1" max="600" placeholder="e.g., 20" required />
+            </div>
+            <div>
+              <label for="fDate">Date</label>
+              <input type="date" id="fDate" required />
+            </div>
+            <div>
+              <label for="fGoal">Monthly Goal (km)</label>
+              <input type="number" id="fGoal" min="5" max="500" value="30" />
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <button type="submit" class="btn-maroon" style="width:100%;">Save Walk</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <!-- TAB 2: HISTORY -->
+    <div id="pane-history" class="tab-pane">
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">Walk History</div>
+          <button type="button" class="btn-soft" id="exportCsvBtn" style="padding:6px 10px; font-size:11.5px;">Export CSV</button>
+        </div>
+        <div id="historyContainer"></div>
+      </section>
+    </div>
+
+    <!-- TAB 3: MALAYALAM -->
+    <div id="pane-lang" class="tab-pane">
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">മലയാളം / English Summary</div>
+        </div>
+        <p style="font-size:13px; line-height:1.65; color:var(--text);">
+          <strong>പാറമ്മൽ വാക്കിംഗ് ക്ലബ്ബ്</strong> — തച്ചനാട്ടുകര പഞ്ചായത്തിലെ പാറമ്മൽ വാർഡിൽ ആരോഗ്യകരമായ നടത്ത ശീലം വളർത്തുന്നതിനുള്ള കൂട്ടായ്മ.
+        </p>
+        <div style="margin-top:12px; padding:12px; border-radius:12px; background:var(--cream); font-size:12.5px;">
+          <div><strong>ആകെ ദൂരം (Total Distance):</strong> <span id="mlTotalKm">0.00 km</span></div>
+          <div style="margin-top:4px;"><strong>ഏകദേശ ചുവടുകൾ (Steps):</strong> <span id="mlTotalSteps">0</span></div>
+          <div style="margin-top:4px;"><strong>സ്ഥലം:</strong> Legacy AUP School, Parammal, Thachanattukara</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- TAB 4: WARD INFO -->
+    <div id="pane-ward" class="tab-pane">
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">Ward Program Details</div>
+        </div>
+        <p style="font-size:13px; line-height:1.6; color:var(--muted);">
+          Organized for residents of Parammal Ward, Thachanattukara Panchayat. Inaugural venue: <strong>Legacy AUP School, Parammal</strong> on <strong>Saturday, November 21, 2026 at 2:30 PM</strong>.
+        </p>
+        <div style="margin-top:12px; font-size:12.5px; line-height:1.7;">
+          <div>• <strong>CP Subair</strong> — Ward Member</div>
+          <div>• <strong>Anu Anjoom</strong> — SHO, Nattukal</div>
+          <div>• <strong>Abdul Jaleel CP</strong> — Pharmacist &amp; Patient Counsellor</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="pane-admin" class="tab-pane">
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">Admin Panel — Poster, Slides &amp; Pop-Up</div>
+          <button type="button" class="btn-soft" id="closeAdminBtn" style="padding:5px 10px; font-size:11.5px;">Back</button>
+        </div>
+
+        <p id="adminAccessMessage" style="font-size:12px; color:var(--muted); margin-bottom:10px;"></p>
+
+        <div id="adminEditorBox" style="display:none;">
+          <!-- Header Banner Display Mode -->
+          <div style="margin-bottom:14px;">
+            <label for="bannerModeSelect">Top Banner Schedule Mode</label>
+            <select id="bannerModeSelect">
+              <option value="auto">Auto: Rotate Photo Posters</option>
+              <option value="poster">Show Fixed Inauguration Poster</option>
+              <option value="slides">Force Photo Slideshow</option>
+            </select>
+            <p id="bannerStatusHint" style="font-size:11px; color:var(--muted); margin-top:4px;"></p>
+          </div>
+
+          <!-- Manage Photo Slides -->
+          <div style="border-top:1px solid var(--border); padding-top:12px; margin-bottom:14px;">
+            <div class="card-title" style="font-size:13.5px; margin-bottom:8px;">Manage Rotating Photo Posters</div>
+            <div id="adminSlidesList"></div>
+
+            <div class="grid-2" style="margin-top:8px;">
+              <div>
+                <label for="newSlideCaption">Slide Caption</label>
+                <input type="text" id="newSlideCaption" placeholder="e.g., Morning Ward Walk @ Parammal" />
+              </div>
+              <div>
+                <label for="newSlideTag">Badge Tag</label>
+                <input type="text" id="newSlideTag" placeholder="e.g., WARD WALK" />
+              </div>
+              <div>
+                <label for="newSlideUrl">Photo URL (optional)</label>
+                <input type="text" id="newSlideUrl" placeholder="https://..." />
+              </div>
+            </div>
+            <button type="button" class="btn-soft" id="addSlideBtn" style="margin-top:8px; width:100%;">+ Add Photo to Slideshow</button>
+          </div>
+
+          <!-- Optional Announcement Pop-Up -->
+          <div style="border-top:1px solid var(--border); padding-top:12px;">
+            <div class="toggle-row">
+              <div>
+                <strong>Optional Announcement Pop-Up</strong>
+                <span>Turn ON only when you want a promotion, walk event, or notice shown</span>
+              </div>
+              <input type="checkbox" id="annEnabledToggle" style="width:20px; height:20px; accent-color:var(--maroon);" />
+            </div>
+
+            <div class="grid-2">
+              <div class="full">
+                <label for="annTitleEn">Pop-Up Heading (English)</label>
+                <input type="text" id="annTitleEn" />
+              </div>
+              <div class="full">
+                <label for="annTitleMl">Pop-Up Heading (Malayalam)</label>
+                <input type="text" id="annTitleMl" />
+              </div>
+              <div class="full">
+                <label for="annMsgEn">Announcement / Promotion Message (English)</label>
+                <textarea id="annMsgEn"></textarea>
+              </div>
+              <div class="full">
+                <label for="annMsgMl">Announcement / Promotion Message (Malayalam)</label>
+                <textarea id="annMsgMl"></textarea>
+              </div>
+              <div>
+                <label for="annPrimaryLabel">Primary Button Text</label>
+                <input type="text" id="annPrimaryLabel" />
+              </div>
+              <div>
+                <label for="annLinkUrl">Optional Link URL</label>
+                <input type="text" id="annLinkUrl" placeholder="https://..." />
+              </div>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+              <button type="button" class="btn-maroon" id="saveAnnBtn">Save All Admin Settings</button>
+              <button type="button" class="btn-soft" id="previewAnnBtn">Preview Pop-Up</button>
+            </div>
+            <p id="adminSaveStatus" style="font-size:12px; color:var(--green); font-weight:700; margin-top:8px;"></p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Optional Announcement Pop-Up Modal -->
+  <div class="modal-backdrop" id="annModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="annModalTitle">
+    <div class="announcement-modal">
+      <button type="button" class="modal-close" id="closeAnnX" aria-label="Close">✕</button>
+      <div class="ann-heading" id="annModalTitle">📢 ANNOUNCEMENT</div>
+      <div class="ann-heading-ml" id="annModalTitleMl">അറിയിപ്പ്</div>
+
+      <p class="ann-body-en" id="annModalBodyEn"></p>
+      <p class="ann-body-ml" id="annModalBodyMl"></p>
+
+      <div class="ann-actions">
+        <button type="button" class="ann-btn-gold" id="annLearnMoreBtn">Learn More</button>
+        <button type="button" class="ann-btn-dismiss" id="annDismissBtn">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button type="button" class="nav-btn active" data-target="pane-track">
+      <span class="nav-ico">🧭</span>
+      <span>Track</span>
+    </button>
+    <button type="button" class="nav-btn" data-target="pane-history">
+      <span class="nav-ico">🕒</span>
+      <span>History</span>
+    </button>
+    <button type="button" class="nav-btn" data-target="pane-lang">
+      <span class="nav-ico">🌐</span>
+      <span>മലയാളം</span>
+    </button>
+    <button type="button" class="nav-btn" data-target="pane-ward">
+      <span class="nav-ico">ⓘ</span>
+      <span>Ward Info</span>
+    </button>
+  </nav>
+
+  <div class="login-backdrop" id="memberLoginBackdrop" role="dialog" aria-modal="true" aria-labelledby="memberLoginTitle">
+    <div class="login-card">
+      <div class="card-head" style="margin-bottom:10px;">
+        <div class="card-title" id="memberLoginTitle">Member Login</div>
+      </div>
+      <div class="login-tabs">
+        <button type="button" class="login-tab active" id="loginTab" data-login-tab="login">Login</button>
+        <button type="button" class="login-tab" id="registerTab" data-login-tab="register">Create Account</button>
+      </div>
+      <p style="font-size:11px; line-height:1.45; color:var(--muted); margin-bottom:12px;">
+        Member display names and walk dates, routes, and distances are visible publicly.
+      </p>
+
+      <form id="memberLoginForm">
+        <div style="display:grid; gap:10px;">
+          <div>
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" autocomplete="email" required />
+          </div>
+          <button type="submit" class="btn-maroon" style="width:100%;">Email me a sign-in link</button>
+        </div>
+      </form>
+
+      <form id="memberRegisterForm" style="display:none;">
+        <div style="display:grid; gap:10px;">
+          <div>
+            <label for="registerName">Public display name</label>
+            <input type="text" id="registerName" autocomplete="name" required />
+          </div>
+          <div>
+            <label for="registerEmail">Email</label>
+            <input type="email" id="registerEmail" autocomplete="email" required />
+          </div>
+          <label style="display:flex; align-items:flex-start; gap:7px; font-size:11px; line-height:1.4;">
+            <input type="checkbox" id="registerPublicConsent" required style="width:auto; margin-top:2px;" />
+            I agree that my display name and walk records will be public.
+          </label>
+          <button type="submit" class="btn-maroon" style="width:100%;">Create account and email link</button>
+        </div>
+      </form>
+
+      <p class="login-error" id="memberLoginError"></p>
+      <button type="button" class="btn-soft" id="closeMemberLoginBtn" style="width:100%; display:none;">Cancel</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let currentMember = null;
+
+    // Built-in SVG illustrations for default post-inauguration slides (Admin can replace/add real photos anytime)
+    function makeBannerDataUri(title, sub, c1, c2) {
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='360' viewBox='0 0 800 360'>
+        <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='${c1}'/><stop offset='100%' stop-color='${c2}'/></linearGradient></defs>
+        <rect width='800' height='360' fill='url(#g)'/>
+        <circle cx='690' cy='80' r='110' fill='rgba(244,196,20,0.16)'/>
+        <circle cx='120' cy='310' r='140' fill='rgba(255,255,255,0.07)'/>
+        <text x='44' y='150' fill='#F4C414' font-family='sans-serif' font-size='22' font-weight='bold'>PARAMMAL WALKING CLUB</text>
+        <text x='44' y='200' fill='#FFFFFF' font-family='sans-serif' font-size='34' font-weight='bold'>${title}</text>
+        <text x='44' y='242' fill='rgba(255,255,255,0.88)' font-family='sans-serif' font-size='20'>${sub}</text>
+      </svg>`;
+      return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+    }
+
+    const defaultSlides = [
+      {
+        id: 1,
+        image: makeBannerDataUri("Daily Morning Ward Walk", "6:00 AM • Legacy AUP School Loop, Parammal", "#6B0F3B", "#2E0418"),
+        caption: "Daily Morning Ward Walk — Join neighbors every morning at 6:00 AM",
+        tag: "MORNING WALK"
+      },
+      {
+        id: 2,
+        image: makeBannerDataUri("Healthy Ward, Active Life", "Track your daily steps & distance in Thachanattukara", "#8E1550", "#450624"),
+        caption: "Healthy Ward, Active Life — Every step counts toward our ward goal",
+        tag: "HEALTH CLUB"
+      },
+      {
+        id: 3,
+        image: makeBannerDataUri("Sunday Community Group Walk", "All age groups welcome • Parammal Ward", "#56092E", "#1F0310"),
+        caption: "Sunday Community Group Walk — Family & senior-friendly pace",
+        tag: "SUNDAY SPECIAL"
+      }
+    ];
+
+    const defaultAnnouncement = {
+      enabled: false,
+      titleEn: "📢 ANNOUNCEMENT",
+      titleMl: "അറിയിപ്പ്",
+      msgEn: "🏆 MEGA SUNDAY WALK: Join us at Legacy AUP School this Sunday at 6:30 AM! Free health checkup & refreshments for all participants.",
+      msgMl: "ഈ ഞായറാഴ്ച രാവിലെ 6:30-ന് ലെഗസി എ.യു.പി സ്കൂളിൽ നടക്കുന്ന മെഗാ നടത്തത്തിൽ പങ്കാളികളാകൂ",
+      primaryLabel: "Learn More",
+      linkUrl: ""
+    };
+
+    let siteContent = {
+      bannerMode: "auto",
+      slides: [],
+      announcement: { ...defaultAnnouncement }
+    };
+
+    function showAppStatus(message) {
+      const status = document.getElementById("appStatus");
+      status.textContent = message;
+      status.style.display = "block";
+    }
+
+    async function apiRequest(path, options) {
+      const requestOptions = { credentials: "same-origin", ...(options || {}) };
+      requestOptions.headers = { Accept: "application/json", ...(requestOptions.headers || {}) };
+      if (requestOptions.body && typeof requestOptions.body !== "string") {
+        requestOptions.headers["Content-Type"] = "application/json";
+        requestOptions.body = JSON.stringify(requestOptions.body);
+      }
+
+      const response = await fetch(path, requestOptions);
+      const payload = response.status === 204 ? {} : await response.json();
+      if (!response.ok) {
+        const error = new Error(payload.error || `Request failed (${response.status}).`);
+        error.status = response.status;
+        throw error;
+      }
+      return payload;
+    }
+
+    function displayBackendError(context, error) {
+      console.error(context, error);
+      showAppStatus(`${context}: ${error.message || "Unexpected backend error."}`);
+    }
+
+    function parseHttpUrl(value) {
+      const parsedUrl = new URL(value);
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+        throw new Error("URLs must use http or https.");
+      }
+      return parsedUrl;
+    }
+
+    async function loadSiteContent() {
+      const content = await apiRequest("/api/site-content");
+      const slides = Array.isArray(content.slides) ? content.slides : [];
+      slides.forEach((slide) => {
+        if (!slide || typeof slide.image !== "string") {
+          throw new Error("A saved poster is missing a valid image URL.");
+        }
+        slide.image = parseHttpUrl(slide.image).href;
+      });
+      const announcement = { ...defaultAnnouncement, ...(content.announcement || {}) };
+      if (announcement.linkUrl) announcement.linkUrl = parseHttpUrl(announcement.linkUrl).href;
+      siteContent = {
+        bannerMode: content.bannerMode || "auto",
+        slides,
+        announcement
+      };
+    }
+
+    async function saveSiteContent() {
+      await apiRequest("/api/site-content", { method: "PUT", body: siteContent });
+    }
+
+    function getTodayLocalISO() {
+      const date = new Date();
+      const localOffset = date.getTimezoneOffset() * 60000;
+      return new Date(date.getTime() - localOffset).toISOString().slice(0, 10);
+    }
+
+    // The automatic mode keeps the poster carousel visible year-round.
+    let currentSlideIdx = 0;
+    let slideInterval = null;
+
+    function shouldShowInaugurationPoster() {
+      return siteContent.bannerMode === "poster";
+    }
+
+    function renderHeaderBanner() {
+      const showPoster = shouldShowInaugurationPoster();
+      const posterEl = document.getElementById("inaugurationPosterSection");
+      const sliderEl = document.getElementById("photoSliderSection");
+
+      if (showPoster) {
+        posterEl.style.display = "block";
+        sliderEl.style.display = "none";
+        if (slideInterval) clearInterval(slideInterval);
+      } else {
+        posterEl.style.display = "none";
+        sliderEl.style.display = "block";
+        renderSlides();
+      }
+    }
+
+    function getSlides() {
+      return [...defaultSlides, ...siteContent.slides];
+    }
+
+    function renderSlides() {
+      const slides = getSlides();
+      if (currentSlideIdx >= slides.length) currentSlideIdx = 0;
+
+      const track = document.getElementById("slideTrack");
+      const dots = document.getElementById("slideDots");
+
+      track.innerHTML = slides.map((s) => `
+        <div class="slide-item">
+          <img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.caption)}" />
+          <div class="slide-caption">
+            <span>${escapeHtml(s.caption)}</span>
+            <span class="slide-tag">${escapeHtml(s.tag || "CLUB")}</span>
+          </div>
+        </div>
+      `).join("");
+
+      dots.innerHTML = slides.map((_, idx) => `
+        <button type="button" class="slide-dot ${idx === currentSlideIdx ? "active" : ""}" data-idx="${idx}" aria-label="Slide ${idx + 1}"></button>
+      `).join("");
+
+      dots.querySelectorAll(".slide-dot").forEach((d) => {
+        d.addEventListener("click", () => {
+          currentSlideIdx = Number(d.dataset.idx);
+          updateSlideTransform();
+        });
+      });
+
+      updateSlideTransform();
+
+      if (slideInterval) clearInterval(slideInterval);
+      if (slides.length > 1) {
+        slideInterval = setInterval(() => {
+          currentSlideIdx = (currentSlideIdx + 1) % slides.length;
+          updateSlideTransform();
+        }, 4200);
+      }
+    }
+
+    function updateSlideTransform() {
+      const track = document.getElementById("slideTrack");
+      const dots = document.querySelectorAll(".slide-dot");
+      track.style.transform = `translateX(-${currentSlideIdx * 100}%)`;
+      dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIdx));
+    }
+
+    document.getElementById("prevSlideBtn").addEventListener("click", () => {
+      const slides = getSlides();
+      currentSlideIdx = (currentSlideIdx - 1 + slides.length) % slides.length;
+      updateSlideTransform();
+    });
+
+    document.getElementById("nextSlideBtn").addEventListener("click", () => {
+      const slides = getSlides();
+      currentSlideIdx = (currentSlideIdx + 1) % slides.length;
+      updateSlideTransform();
+    });
+
+    // Touch swipe for slideshow
+    let touchStartX = 0;
+    const sliderWrap = document.getElementById("sliderWrap");
+    sliderWrap.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    sliderWrap.addEventListener("touchend", (e) => {
+      const diff = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(diff) > 40) {
+        const slides = getSlides();
+        currentSlideIdx = diff < 0
+          ? (currentSlideIdx + 1) % slides.length
+          : (currentSlideIdx - 1 + slides.length) % slides.length;
+        updateSlideTransform();
+      }
+    }, { passive: true });
+
+    // Navigation
+    function showPane(paneId) {
+      document.querySelectorAll(".tab-pane").forEach((p) => p.classList.remove("active"));
+      document.getElementById(paneId).classList.add("active");
+      document.querySelectorAll(".nav-btn").forEach((b) => {
+        b.classList.toggle("active", b.dataset.target === paneId);
+      });
+      if (paneId === "pane-track" && map) {
+        setTimeout(() => map.invalidateSize(), 120);
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.querySelectorAll(".nav-btn").forEach((btn) => {
+      btn.addEventListener("click", () => showPane(btn.dataset.target));
+    });
+
+    // Optional Announcement Modal
+    const annModal = document.getElementById("annModalBackdrop");
+    let annState = { ...defaultAnnouncement };
+
+    function openAnnouncementModal(force = false) {
+      annState = { ...defaultAnnouncement, ...siteContent.announcement };
+      if (!force && !annState.enabled) return;
+
+      document.getElementById("annModalTitle").textContent = annState.titleEn || "📢 ANNOUNCEMENT";
+      document.getElementById("annModalTitleMl").textContent = annState.titleMl || "അറിയിപ്പ്";
+      document.getElementById("annModalBodyEn").textContent = annState.msgEn || "";
+      document.getElementById("annModalBodyMl").textContent = annState.msgMl || "";
+      document.getElementById("annLearnMoreBtn").textContent = annState.primaryLabel || "Learn More";
+      annModal.classList.add("open");
+    }
+
+    function closeAnnouncementModal() {
+      annModal.classList.remove("open");
+    }
+
+    document.getElementById("closeAnnX").addEventListener("click", closeAnnouncementModal);
+    document.getElementById("annDismissBtn").addEventListener("click", closeAnnouncementModal);
+    annModal.addEventListener("click", (e) => { if (e.target === annModal) closeAnnouncementModal(); });
+    document.getElementById("reopenNoticeBtn").addEventListener("click", () => openAnnouncementModal(true));
+
+    document.getElementById("annLearnMoreBtn").addEventListener("click", () => {
+      if (annState.linkUrl && annState.linkUrl.trim()) {
+        window.open(annState.linkUrl.trim(), "_blank", "noopener,noreferrer");
+      } else {
+        closeAnnouncementModal();
+        showPane("pane-ward");
+      }
+    });
+
+    // Admin Panel Logic
+    const adminEditorBox = document.getElementById("adminEditorBox");
+
+    function renderAdminSlidesList() {
+      const container = document.getElementById("adminSlidesList");
+      container.innerHTML = siteContent.slides.map((s) => `
+        <div class="slide-admin-row">
+          <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+            <img class="slide-thumb" src="${escapeHtml(s.image)}" alt="" />
+            <div style="min-width:0;">
+              <div style="font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(s.caption)}</div>
+              <div style="font-size:10.5px; color:var(--muted);">${escapeHtml(s.tag || "CLUB")}</div>
+            </div>
+          </div>
+          <button type="button" class="btn-soft" style="padding:4px 8px; font-size:11px; color:#B91C1C;" data-slide-id="${escapeHtml(s.id)}">Remove</button>
+        </div>
+      `).join("");
+      container.querySelectorAll("[data-slide-id]").forEach((button) => {
+        button.addEventListener("click", () => { void deleteSlide(button.dataset.slideId); });
+      });
+    }
+
+    async function deleteSlide(id) {
+      const previousSlides = siteContent.slides;
+      siteContent.slides = siteContent.slides.filter((slide) => String(slide.id) !== id);
+      try {
+        await saveSiteContent();
+        renderAdminSlidesList();
+        renderHeaderBanner();
+        document.getElementById("adminSaveStatus").textContent = "Poster removed.";
+      } catch (error) {
+        siteContent.slides = previousSlides;
+        renderAdminSlidesList();
+        displayBackendError("Could not remove poster", error);
+      }
+    }
+
+    document.getElementById("addSlideBtn").addEventListener("click", async () => {
+      const caption = document.getElementById("newSlideCaption").value.trim() || "Parammal Walking Club Activity";
+      const tag = document.getElementById("newSlideTag").value.trim() || "WARD WALK";
+      const urlVal = document.getElementById("newSlideUrl").value.trim();
+
+      let photoUrl;
+      try {
+        photoUrl = parseHttpUrl(urlVal);
+      } catch (error) {
+        document.getElementById("adminSaveStatus").textContent = error.message || "Enter a valid image URL.";
+        return;
+      }
+
+      siteContent.slides.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        image: photoUrl.href,
+        caption,
+        tag
+      });
+      try {
+        await saveSiteContent();
+        document.getElementById("newSlideCaption").value = "";
+        document.getElementById("newSlideTag").value = "";
+        document.getElementById("newSlideUrl").value = "";
+        renderAdminSlidesList();
+        renderHeaderBanner();
+        document.getElementById("adminSaveStatus").textContent = "New photo added to slideshow!";
+      } catch (error) {
+        siteContent.slides.pop();
+        displayBackendError("Could not save poster", error);
+      }
+    });
+
+    function populateAdminForm() {
+      const s = siteContent.announcement;
+      document.getElementById("bannerModeSelect").value = siteContent.bannerMode;
+      document.getElementById("bannerStatusHint").textContent =
+        `Automatic mode rotates posters one by one. The inauguration poster can be shown manually.`;
+
+      document.getElementById("annEnabledToggle").checked = Boolean(s.enabled);
+      document.getElementById("annTitleEn").value = s.titleEn;
+      document.getElementById("annTitleMl").value = s.titleMl;
+      document.getElementById("annMsgEn").value = s.msgEn;
+      document.getElementById("annMsgMl").value = s.msgMl;
+      document.getElementById("annPrimaryLabel").value = s.primaryLabel;
+      document.getElementById("annLinkUrl").value = s.linkUrl || "";
+      renderAdminSlidesList();
+    }
+
+    function openAdminPanel() {
+      showPane("pane-admin");
+      const message = document.getElementById("adminAccessMessage");
+      adminEditorBox.style.display = "none";
+      if (!currentMember) {
+        message.textContent = "Sign in with an administrator account to manage club content.";
+        localStorage.setItem("pwc_admin_route_after_auth", "true");
+        openMemberLogin();
+      } else if (!currentMember.isAdmin) {
+        message.textContent = "This account does not have club administrator access.";
+      } else {
+        localStorage.removeItem("pwc_admin_route_after_auth");
+        message.textContent = "Signed in as club administrator.";
+        adminEditorBox.style.display = "block";
+        populateAdminForm();
+      }
+    }
+
+    window.addEventListener("hashchange", () => {
+      if (window.location.hash.toLowerCase() === "#admin") {
+        openAdminPanel();
+      } else if (document.getElementById("pane-admin").classList.contains("active")) {
+        showPane("pane-track");
+      }
+    });
+
+    document.getElementById("closeAdminBtn").addEventListener("click", () => {
+      history.replaceState(null, "", `${location.pathname}${location.search}`);
+      localStorage.removeItem("pwc_admin_route_after_auth");
+      showPane("pane-track");
+    });
+
+    function collectAnnouncementFromForm() {
+      const linkValue = document.getElementById("annLinkUrl").value.trim();
+      let linkUrl = "";
+      if (linkValue) {
+        linkUrl = parseHttpUrl(linkValue).href;
+      }
+
+      return {
+        enabled: document.getElementById("annEnabledToggle").checked,
+        titleEn: document.getElementById("annTitleEn").value.trim() || "📢 ANNOUNCEMENT",
+        titleMl: document.getElementById("annTitleMl").value.trim() || "അറിയിപ്പ്",
+        msgEn: document.getElementById("annMsgEn").value.trim(),
+        msgMl: document.getElementById("annMsgMl").value.trim(),
+        primaryLabel: document.getElementById("annPrimaryLabel").value.trim() || "Learn More",
+        linkUrl
+      };
+    }
+
+    document.getElementById("saveAnnBtn").addEventListener("click", async () => {
+      const previousContent = siteContent;
+      try {
+        siteContent = {
+          ...siteContent,
+          bannerMode: document.getElementById("bannerModeSelect").value,
+          announcement: collectAnnouncementFromForm()
+        };
+        await saveSiteContent();
+        annState = { ...siteContent.announcement };
+        renderHeaderBanner();
+        document.getElementById("adminSaveStatus").textContent = "All admin settings saved.";
+      } catch (error) {
+        siteContent = previousContent;
+        displayBackendError("Could not save admin settings", error);
+      }
+    });
+
+    document.getElementById("previewAnnBtn").addEventListener("click", () => {
+      try {
+        annState = collectAnnouncementFromForm();
+        openAnnouncementModal(true);
+      } catch (error) {
+        document.getElementById("adminSaveStatus").textContent = error.message;
+      }
+    });
+
+    // Map Setup
+    const defaultLatLng = [10.9535, 76.4325];
+    let map = null;
+    let walkerMarker = null;
+    let routeLine = null;
+    let routeCoords = [defaultLatLng];
+
+    if (typeof L !== "undefined") {
+      map = L.map("wardMap", { zoomControl: true }).setView(defaultLatLng, 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(map);
+
+      walkerMarker = L.circleMarker(defaultLatLng, {
+        radius: 8,
+        color: "#ffffff",
+        weight: 2.5,
+        fillColor: "#2563EB",
+        fillOpacity: 1
+      }).addTo(map).bindPopup("Legacy AUP School, Parammal").openPopup();
+
+      routeLine = L.polyline(routeCoords, { color: "#2563EB", weight: 4 }).addTo(map);
+    }
+
+    // Stats & Logging
+    function getSessionMember() {
+      return currentMember;
+    }
+
+    async function loadLogs() {
+      const pageSize = 500;
+      const rows = [];
+      let offset = 0;
+      while (true) {
+        const page = await apiRequest(`/api/walks?limit=${pageSize}&offset=${offset}`);
+        rows.push(...page.items);
+        if (rows.length >= page.total || page.items.length < pageSize) break;
+        offset += pageSize;
+      }
+      return rows;
+    }
+
+    async function saveLog(log) {
+      await apiRequest("/api/walks", {
+        method: "POST",
+        body: {
+          route: log.route,
+          km: log.km,
+          mins: log.mins,
+          date: log.date
+        }
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    const fDate = document.getElementById("fDate");
+    const fName = document.getElementById("fName");
+    const fGoal = document.getElementById("fGoal");
+
+    fDate.valueAsDate = new Date();
+    fName.value = getSessionMember()?.name || "";
+    fName.readOnly = true;
+    fGoal.value = "30";
+    let cachedLogs = [];
+
+    function renderStats(logs) {
+      const goal = Math.min(500, Math.max(5, parseFloat(fGoal.value) || 30));
+      const member = getSessionMember();
+      const progressLogs = member ? logs.filter((item) => item.memberId === member.id) : logs;
+      const totalKm = progressLogs.reduce((acc, item) => acc + item.km, 0);
+      const steps = Math.round(totalKm * 1312);
+      const cal = Math.round(totalKm * 55);
+      const pct = Math.min(100, Math.round((totalKm / goal) * 100));
+
+      document.getElementById("sumKm").textContent = `${totalKm.toFixed(2)} km`;
+      document.getElementById("progressTitle").textContent = member ? "My Ward Health Progress" : "Club Walking Progress";
+      document.getElementById("sumSteps").textContent = steps.toLocaleString();
+      document.getElementById("sumCal").textContent = `${cal.toLocaleString()} kcal`;
+      document.getElementById("goalDisplay").textContent = `${goal} km`;
+      document.getElementById("goalPctDisplay").textContent = `${pct}%`;
+      document.getElementById("goalBar").style.width = `${pct}%`;
+
+      document.getElementById("mlTotalKm").textContent = `${totalKm.toFixed(2)} km`;
+      document.getElementById("mlTotalSteps").textContent = steps.toLocaleString();
+
+      document.getElementById("walkerBadge").textContent = member ? `👤 ${member.name}` : "";
+
+      const histEl = document.getElementById("historyContainer");
+      if (!logs.length) {
+        histEl.innerHTML = `<p style="font-size:12.5px; color:var(--muted); text-align:center; padding:16px 0;">No walk entries yet.</p>`;
+        return;
+      }
+
+      histEl.innerHTML = logs
+        .slice()
+        .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+        .map((item) => `
+          <div class="log-item">
+            <div>
+              <div class="log-title">${escapeHtml(item.name)} • ${escapeHtml(item.route)}</div>
+              <div class="log-sub">${escapeHtml(item.date)} • ${item.mins} mins • ~${Math.round(item.km * 1312).toLocaleString()} steps</div>
+            </div>
+            <span class="km-tag">+${item.km.toFixed(2)} km</span>
+          </div>
+        `).join("");
+    }
+
+    async function refreshStats() {
+      try {
+        cachedLogs = await loadLogs();
+        renderStats(cachedLogs);
+      } catch (error) {
+        displayBackendError("Could not load walk records", error);
+      }
+    }
+
+    document.getElementById("walkForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const member = getSessionMember();
+      if (!member) {
+        openMemberLogin();
+        return;
+      }
+
+      if (!e.currentTarget.reportValidity()) return;
+
+      const name = fName.value.trim();
+      const route = document.getElementById("fRoute").value;
+      const km = parseFloat(document.getElementById("fKm").value);
+      const mins = parseInt(document.getElementById("fMins").value, 10);
+      const date = fDate.value;
+
+      if (!name || isNaN(km) || km <= 0 || isNaN(mins) || mins <= 0 || !date) return;
+
+      try {
+        await saveLog({ route, km, mins, date });
+        document.getElementById("fKm").value = "";
+        document.getElementById("fMins").value = "";
+        await refreshStats();
+      } catch (error) {
+        displayBackendError("Could not save walk", error);
+      }
+    });
+
+    fGoal.addEventListener("input", () => renderStats(cachedLogs));
+    fGoal.addEventListener("change", async () => {
+      const member = getSessionMember();
+      if (!member || !fGoal.reportValidity()) return;
+      try {
+        const settings = await apiRequest("/api/settings/me", {
+          method: "PUT",
+          body: { monthlyGoal: Number(fGoal.value) }
+        });
+        currentMember.monthlyGoal = settings.monthlyGoal;
+        await refreshStats();
+      } catch (error) {
+        displayBackendError("Could not save monthly goal", error);
+      }
+    });
+
+    document.getElementById("exportCsvBtn").addEventListener("click", async () => {
+      let logs;
+      try {
+        logs = await loadLogs();
+      } catch (error) {
+        displayBackendError("Could not export walk records", error);
+        return;
+      }
+      if (!logs.length) return alert("No walk logs to export.");
+      const rows = [["Date", "Walker", "Route", "Distance (km)", "Minutes"]];
+      logs.forEach((l) => rows.push([l.date, l.name, l.route, l.km.toFixed(2), l.mins]));
+      const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "parammal-walking-club.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Live GPS Tracking
+    let gpsWatch = null;
+    let gpsClock = null;
+    let gpsStart = null;
+    let gpsKm = 0;
+    let prevPt = null;
+    let isWalking = false;
+
+    function distKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    const gpsBtn = document.getElementById("toggleGpsBtn");
+    const gpsStatusLabel = document.getElementById("gpsStatusLabel");
+
+    gpsBtn.addEventListener("click", async () => {
+      if (!isWalking) {
+        if (!getSessionMember()) {
+          openMemberLogin();
+          return;
+        }
+        if (!("geolocation" in navigator)) {
+          gpsStatusLabel.textContent = "GPS unavailable";
+          return;
+        }
+        isWalking = true;
+        gpsKm = 0;
+        prevPt = null;
+        gpsStart = Date.now();
+        routeCoords = [];
+        document.getElementById("gpsDist").textContent = "0.00 km";
+        document.getElementById("gpsTimer").textContent = "00:00";
+        gpsBtn.textContent = "Stop & Save Walk";
+        gpsBtn.className = "btn-stop";
+        gpsStatusLabel.textContent = "Recording...";
+
+        gpsClock = setInterval(() => {
+          const sec = Math.floor((Date.now() - gpsStart) / 1000);
+          const m = String(Math.floor(sec / 60)).padStart(2, "0");
+          const s = String(sec % 60).padStart(2, "0");
+          document.getElementById("gpsTimer").textContent = `${m}:${s}`;
+        }, 1000);
+
+        gpsWatch = navigator.geolocation.watchPosition(
+          (pos) => {
+            const { latitude, longitude, accuracy } = pos.coords;
+            if (accuracy > 45) return;
+            const pt = [latitude, longitude];
+            if (map && walkerMarker && routeLine) {
+              walkerMarker.setLatLng(pt);
+              routeCoords.push(pt);
+              routeLine.setLatLngs(routeCoords);
+              map.panTo(pt);
+            }
+            if (prevPt) {
+              const d = distKm(prevPt[0], prevPt[1], latitude, longitude);
+              if (d >= 0.004 && d < 0.5) {
+                gpsKm += d;
+                document.getElementById("gpsDist").textContent = `${gpsKm.toFixed(2)} km`;
+              }
+            }
+            prevPt = pt;
+          },
+          (err) => { gpsStatusLabel.textContent = err.message; },
+          { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+        );
+      } else {
+        isWalking = false;
+        if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
+        if (gpsClock !== null) clearInterval(gpsClock);
+        gpsBtn.textContent = "Start Live Walk";
+        gpsBtn.className = "btn-gold";
+        gpsStatusLabel.textContent = "Ready";
+
+        const mins = Math.max(1, Math.round((Date.now() - gpsStart) / 60000));
+        if (gpsKm >= 0.01) {
+          try {
+            await saveLog({
+              route: "Live GPS Walk",
+              km: parseFloat(gpsKm.toFixed(2)),
+              mins,
+              date: getTodayLocalISO()
+            });
+            await refreshStats();
+          } catch (error) {
+            displayBackendError("Could not save GPS walk", error);
+          }
+        }
+      }
+    });
+
+    const memberLoginBackdrop = document.getElementById("memberLoginBackdrop");
+    const memberLoginError = document.getElementById("memberLoginError");
+    const closeMemberLoginBtn = document.getElementById("closeMemberLoginBtn");
+
+    function openMemberLogin() {
+      memberLoginError.textContent = "";
+      closeMemberLoginBtn.style.display = "block";
+      memberLoginBackdrop.classList.add("open");
+    }
+
+    function closeMemberLogin() {
+      memberLoginBackdrop.classList.remove("open");
+      if (!currentMember && window.location.hash.toLowerCase() === "#admin") {
+        localStorage.removeItem("pwc_admin_route_after_auth");
+        history.replaceState(null, "", `${location.pathname}${location.search}`);
+        showPane("pane-track");
+      }
+    }
+
+    document.querySelectorAll("[data-login-tab]").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const mode = tab.dataset.loginTab;
+        document.querySelectorAll("[data-login-tab]").forEach((item) => item.classList.toggle("active", item === tab));
+        document.getElementById("memberLoginForm").style.display = mode === "login" ? "block" : "none";
+        document.getElementById("memberRegisterForm").style.display = mode === "register" ? "block" : "none";
+        memberLoginError.textContent = "";
+      });
+    });
+
+    closeMemberLoginBtn.addEventListener("click", closeMemberLogin);
+
+    async function syncMemberSession() {
+      let profile;
+      try {
+        profile = await apiRequest("/api/auth/me");
+      } catch (error) {
+        if (error.status !== 401) throw error;
+        currentMember = null;
+        localStorage.removeItem("pwc_admin_route_after_auth");
+        fName.value = "";
+        fName.readOnly = true;
+        fGoal.value = "30";
+        document.getElementById("memberAccountBtn").textContent = "Login";
+        adminEditorBox.style.display = "none";
+        if (document.getElementById("pane-admin").classList.contains("active")) {
+          history.replaceState(null, "", `${location.pathname}${location.search}`);
+          showPane("pane-track");
+        }
+        await refreshStats();
+        return;
+      }
+
+      currentMember = {
+        id: profile.id,
+        name: profile.name,
+        isAdmin: profile.isAdmin,
+        monthlyGoal: Number(profile.monthlyGoal || 30)
+      };
+      fName.value = currentMember.name;
+      fName.readOnly = true;
+      fGoal.value = String(currentMember.monthlyGoal);
+      document.getElementById("memberAccountBtn").textContent = `👤 ${currentMember.name}`;
+      memberLoginBackdrop.classList.remove("open");
+      await refreshStats();
+
+      if (localStorage.getItem("pwc_admin_route_after_auth") === "true") {
+        localStorage.removeItem("pwc_admin_route_after_auth");
+        if (currentMember.isAdmin) {
+          window.location.hash = "admin";
+        } else {
+          openAdminPanel();
+        }
+      }
+    }
+
+    document.getElementById("memberRegisterForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("registerName").value.trim();
+      const email = document.getElementById("registerEmail").value.trim().toLowerCase();
+      const button = e.currentTarget.querySelector('button[type="submit"]');
+      button.disabled = true;
+      memberLoginError.textContent = "";
+      try {
+        const result = await apiRequest("/api/auth/request-link", {
+          method: "POST",
+          body: { mode: "register", email, displayName: name }
+        });
+        memberLoginError.textContent = result.message;
+        document.getElementById("memberRegisterForm").reset();
+      } catch (error) {
+        memberLoginError.textContent = error.message || "Could not create the account.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.getElementById("memberLoginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+      const button = e.currentTarget.querySelector('button[type="submit"]');
+      button.disabled = true;
+      memberLoginError.textContent = "";
+      try {
+        const result = await apiRequest("/api/auth/request-link", {
+          method: "POST",
+          body: { mode: "login", email }
+        });
+        memberLoginError.textContent = result.message;
+        document.getElementById("memberLoginForm").reset();
+      } catch (error) {
+        memberLoginError.textContent = error.message || "Could not send the sign-in link.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.getElementById("memberAccountBtn").addEventListener("click", async () => {
+      const member = getSessionMember();
+      if (member && confirm(`Sign out ${member.name}?`)) {
+        try {
+          await apiRequest("/api/auth/logout", { method: "POST" });
+          await syncMemberSession();
+        } catch (error) {
+          displayBackendError("Could not sign out", error);
+        }
+      } else if (!member) {
+        openMemberLogin();
+      }
+    });
+
+    async function initializeApp() {
+      renderHeaderBanner();
+      try {
+        await apiRequest("/api/health");
+        await loadSiteContent();
+        await syncMemberSession();
+        renderHeaderBanner();
+        openAnnouncementModal(false);
+        if (window.location.hash.toLowerCase() === "#admin") openAdminPanel();
+        const authResult = new URLSearchParams(window.location.search).get("auth");
+        if (authResult === "verified") showAppStatus("Sign-in successful.");
+        if (authResult === "expired") showAppStatus("That sign-in link is expired or has already been used. Request a new link.");
+        if (authResult) history.replaceState(null, "", `${location.pathname}${window.location.hash}`);
+      } catch (error) {
+        displayBackendError("Could not initialize the app", error);
+        if (window.location.hash.toLowerCase() === "#admin") openAdminPanel();
+      }
+    }
+
+    initializeApp().catch((error) => displayBackendError("App startup failed", error));
+  </script>
+</body>
+</html>

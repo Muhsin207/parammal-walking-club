@@ -265,7 +265,7 @@
       position: absolute;
       top: 8px;
       right: 10px;
-      display: flex;
+      display: none;
       gap: 5px;
       z-index: 4;
     }
@@ -813,9 +813,9 @@
       <!-- Automatically rotating photo-poster slideshow -->
       <div id="photoSliderSection" style="display:none;">
         <div class="slider-wrap" id="sliderWrap">
-          <div class="slide-dots" id="slideDots"></div>
-          <button type="button" class="slide-nav slide-prev" id="prevSlideBtn" aria-label="Previous slide">‹</button>
-          <button type="button" class="slide-nav slide-next" id="nextSlideBtn" aria-label="Next slide">›</button>
+          <div class="slide-dots" id="slideDots" style="display:none;"></div>
+          <button type="button" class="slide-nav slide-prev" id="prevSlideBtn" aria-label="Previous slide" style="display:none;">‹</button>
+          <button type="button" class="slide-nav slide-next" id="nextSlideBtn" aria-label="Next slide" style="display:none;">›</button>
           <div class="slide-track" id="slideTrack"></div>
         </div>
       </div>
@@ -1170,39 +1170,7 @@
   <script>
     let currentMember = null;
 
-    // Built-in SVG illustrations for default post-inauguration slides (Admin can replace/add real photos anytime)
-    function makeBannerDataUri(title, sub, c1, c2) {
-      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='360' viewBox='0 0 800 360'>
-        <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='${c1}'/><stop offset='100%' stop-color='${c2}'/></linearGradient></defs>
-        <rect width='800' height='360' fill='url(#g)'/>
-        <circle cx='690' cy='80' r='110' fill='rgba(244,196,20,0.16)'/>
-        <circle cx='120' cy='310' r='140' fill='rgba(255,255,255,0.07)'/>
-        <text x='44' y='150' fill='#F4C414' font-family='sans-serif' font-size='22' font-weight='bold'>PARAMMAL WALKING CLUB</text>
-        <text x='44' y='200' fill='#FFFFFF' font-family='sans-serif' font-size='34' font-weight='bold'>${title}</text>
-        <text x='44' y='242' fill='rgba(255,255,255,0.88)' font-family='sans-serif' font-size='20'>${sub}</text>
-      </svg>`;
-      return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
-    }
-
     const defaultSlides = [
-      {
-        id: 1,
-        image: makeBannerDataUri("Daily Morning Ward Walk", "6:00 AM • Legacy AUP School Loop, Parammal", "#6B0F3B", "#2E0418"),
-        caption: "Daily Morning Ward Walk — Join neighbors every morning at 6:00 AM",
-        tag: "MORNING WALK"
-      },
-      {
-        id: 2,
-        image: makeBannerDataUri("Healthy Ward, Active Life", "Track your daily steps & distance in Thachanattukara", "#8E1550", "#450624"),
-        caption: "Healthy Ward, Active Life — Every step counts toward our ward goal",
-        tag: "HEALTH CLUB"
-      },
-      {
-        id: 3,
-        image: makeBannerDataUri("Sunday Community Group Walk", "All age groups welcome • Parammal Ward", "#56092E", "#1F0310"),
-        caption: "Sunday Community Group Walk — Family & senior-friendly pace",
-        tag: "SUNDAY SPECIAL"
-      },
       {
         id: 4,
         image: "/static/posters/parammal-walking-club-inauguration.jpg",
@@ -1212,10 +1180,10 @@
       },
       {
         id: 5,
-        image: "/static/posters/parammal-walking-club-logo.jpg",
-        caption: "Parammal Walking Club — Our Official Logo",
-        tag: "OUR CLUB",
-        aspectRatio: 261 / 230
+        image: "/static/posters/parammal-walking-club-inauguration.jpg",
+        caption: "Parammal Walking Club Inauguration — 21 November 2026, 2:30 PM",
+        tag: "INAUGURATION",
+        aspectRatio: 768 / 960
       }
     ];
 
@@ -1325,7 +1293,7 @@
     }
 
     function getSlides() {
-      return [...defaultSlides, ...siteContent.slides];
+      return defaultSlides;
     }
 
     function renderSlides() {

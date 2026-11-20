@@ -200,14 +200,14 @@
       position: relative;
     }
 
-    .slide-item img, .slide-item svg {
+    .slide-item img, .slide-item svg, .slide-item video {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
     }
 
-    .slide-item-contained img {
+    .slide-item-contained img, .slide-item-contained video {
       object-fit: contain;
       background: #450624;
     }
@@ -1209,6 +1209,15 @@
         caption: "Parammal Walking Club Inauguration — 21 November 2026, 2:30 PM",
         tag: "INAUGURATION",
         aspectRatio: 768 / 960
+      },
+      {
+        id: 6,
+        type: "video",
+        video: "/static/videos/parammal-walking-club-intro-ml.mp4",
+        poster: "/static/videos/parammal-walking-club-intro-poster.jpg",
+        caption: "Parammal Walking Club — Malayalam introduction",
+        tag: "WATCH INTRO",
+        aspectRatio: 720 / 1280
       }
     ];
 
@@ -1310,6 +1319,8 @@
         posterEl.style.display = "block";
         sliderEl.style.display = "none";
         if (slideInterval) clearInterval(slideInterval);
+        slideInterval = null;
+        document.querySelectorAll("#slideTrack video").forEach((video) => video.pause());
       } else {
         posterEl.style.display = "none";
         sliderEl.style.display = "block";
@@ -1328,15 +1339,32 @@
       const track = document.getElementById("slideTrack");
       const dots = document.getElementById("slideDots");
 
-      track.innerHTML = slides.map((s) => `
-        <div class="slide-item ${s.aspectRatio ? "slide-item-contained" : ""}">
-          <img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.caption)}" />
+      track.innerHTML = slides.map((s, idx) => `
+        <div class="slide-item ${s.aspectRatio ? "slide-item-contained" : ""}" data-slide-index="${idx}">
+          ${s.type === "video"
+            ? `<video controls playsinline preload="metadata" poster="${escapeHtml(s.poster)}" aria-label="${escapeHtml(s.caption)}">
+                <source src="${escapeHtml(s.video)}" type="video/mp4" />
+                Your browser does not support video playback.
+              </video>`
+            : `<img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.caption)}" />`}
           <div class="slide-caption">
             <span>${escapeHtml(s.caption)}</span>
             <span class="slide-tag">${escapeHtml(s.tag || "CLUB")}</span>
           </div>
         </div>
       `).join("");
+
+      track.querySelectorAll("video").forEach((video) => {
+        video.addEventListener("play", () => {
+          if (slideInterval) clearInterval(slideInterval);
+          slideInterval = null;
+        });
+        video.addEventListener("pause", syncSlideRotation);
+        video.addEventListener("ended", () => {
+          currentSlideIdx = (currentSlideIdx + 1) % slides.length;
+          updateSlideTransform();
+        });
+      });
 
       dots.innerHTML = slides.map((_, idx) => `
         <button type="button" class="slide-dot ${idx === currentSlideIdx ? "active" : ""}" data-idx="${idx}" aria-label="Slide ${idx + 1}"></button>
@@ -1351,13 +1379,7 @@
 
       updateSlideTransform();
 
-      if (slideInterval) clearInterval(slideInterval);
-      if (slides.length > 1) {
-        slideInterval = setInterval(() => {
-          currentSlideIdx = (currentSlideIdx + 1) % slides.length;
-          updateSlideTransform();
-        }, 4200);
-      }
+      syncSlideRotation();
     }
 
     function updateSlideTransform() {
@@ -1365,11 +1387,28 @@
       const dots = document.querySelectorAll(".slide-dot");
       const activeSlide = getSlides()[currentSlideIdx];
       const sliderWrap = document.querySelector(".slider-wrap");
+      track.querySelectorAll("video").forEach((video) => {
+        if (Number(video.closest(".slide-item").dataset.slideIndex) !== currentSlideIdx) video.pause();
+      });
       sliderWrap.style.height = activeSlide.aspectRatio
         ? `${Math.min(sliderWrap.clientWidth / activeSlide.aspectRatio, 680)}px`
         : "";
       track.style.transform = `translateX(-${currentSlideIdx * 100}%)`;
       dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIdx));
+      syncSlideRotation();
+    }
+
+    function syncSlideRotation() {
+      if (slideInterval) clearInterval(slideInterval);
+      slideInterval = null;
+      const activeVideo = document.getElementById("slideTrack").children[currentSlideIdx].querySelector("video");
+      if (!shouldShowInaugurationPoster() && getSlides().length > 1 && (!activeVideo || activeVideo.paused)) {
+        const rotationDelay = getSlides()[currentSlideIdx].type === "video" ? 12000 : 4200;
+        slideInterval = setInterval(() => {
+          currentSlideIdx = (currentSlideIdx + 1) % getSlides().length;
+          updateSlideTransform();
+        }, rotationDelay);
+      }
     }
 
     window.addEventListener("resize", () => {

@@ -938,7 +938,7 @@
           <div class="card-title">Walking Places &amp; Routes</div>
         </div>
         <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
-          Set any starting point and destination for road-by-road walking directions in Google Maps. The selected route name will be used when you log your walk.
+          Set your own starting point and destination for road-by-road walking directions in Google Maps. Add up to 3 via points, separated with |.
         </p>
         <div class="log-item">
           <div>
@@ -949,11 +949,15 @@
         <form id="walkingDirectionsForm" class="grid-2" style="margin:10px 0 14px;">
           <div>
             <label for="directionsOrigin">Starting point</label>
-            <input id="directionsOrigin" type="text" maxlength="55" value="Legacy AUP School, Parammal" required />
+            <input id="directionsOrigin" type="text" maxlength="55" value="LEGACY AUPS, X85X+577, Kunnmpuram - Palode Rd" required />
           </div>
           <div>
             <label for="directionsDestination">Destination</label>
-            <input id="directionsDestination" type="text" maxlength="55" value="Palode Town, Attasseri, Mannarkkad, Kerala" required />
+            <input id="directionsDestination" type="text" maxlength="55" value="Kizhakkumpuram Bridge, W9QF+HFR, Attasseri Road" required />
+          </div>
+          <div class="full">
+            <label for="directionsWaypoints">Via points (optional)</label>
+            <input id="directionsWaypoints" type="text" maxlength="160" value="Palode, Thachanattukara-I | Thachanattukara-I | 53th Mile, Thachanattukara-I" />
           </div>
           <div class="full">
             <button type="submit" class="btn-maroon" style="width:100%;">Get Walking Directions</button>
@@ -1626,7 +1630,7 @@
     });
 
     // Map Setup
-    const defaultLatLng = [10.9535, 76.4325];
+    const defaultLatLng = [10.9579142, 76.3481582];
     let map = null;
     let walkerMarker = null;
     let routeLine = null;
@@ -1785,10 +1789,18 @@
       event.preventDefault();
       const origin = document.getElementById("directionsOrigin").value.trim();
       const destination = document.getElementById("directionsDestination").value.trim();
+      const waypoints = document.getElementById("directionsWaypoints").value
+        .split("|")
+        .map((waypoint) => waypoint.trim())
+        .filter(Boolean);
       const status = document.getElementById("directionsStatus");
 
       if (!origin || !destination) {
         status.textContent = "Enter both a starting point and a destination.";
+        return;
+      }
+      if (waypoints.length > 3) {
+        status.textContent = "Enter no more than 3 via points for mobile Google Maps.";
         return;
       }
 
@@ -1803,6 +1815,7 @@
       directionsUrl.searchParams.set("origin", origin);
       directionsUrl.searchParams.set("destination", destination);
       directionsUrl.searchParams.set("travelmode", "walking");
+      if (waypoints.length) directionsUrl.searchParams.set("waypoints", waypoints.join("|"));
       window.open(directionsUrl.href, "_blank", "noopener,noreferrer");
       status.textContent = `Selected walking route: ${route}`;
     });

@@ -405,7 +405,7 @@
     }
 
     #wardMap {
-      height: 175px;
+      height: 320px;
       width: 100%;
       border-radius: 14px;
       border: 1px solid var(--border);
@@ -642,7 +642,7 @@
       background: #fff;
       border-top: 1px solid var(--border);
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       padding: 7px 4px calc(7px + env(safe-area-inset-bottom));
       z-index: 60;
     }
@@ -857,9 +857,11 @@
           <span>📍 Live GPS Tracking: <span id="gpsTimer">00:00</span> / <span id="gpsDist">0.00 km</span></span>
           <span style="font-size:11px; color:var(--muted);" id="gpsStatusLabel">Ready</span>
         </div>
+        <label for="gpsRouteSelect">Walking place / route</label>
+        <select id="gpsRouteSelect" style="margin-bottom:10px;"></select>
         <div id="wardMap"></div>
         <div style="font-size:11.5px; color:var(--muted); margin-top:7px;">
-          Legacy AUP School, Parammal, Thachanattukara
+          Your location and walked path appear here while GPS tracking is active.
         </div>
       </section>
 
@@ -917,7 +919,20 @@
       </section>
     </div>
 
-    <!-- TAB 3: MALAYALAM -->
+    <!-- TAB 3: ROUTES -->
+    <div id="pane-routes" class="tab-pane">
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">Walking Places &amp; Routes</div>
+        </div>
+        <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
+          Choose a route to use for your next GPS-tracked walk. GPS paths are shown on the map during tracking; only the route name and walk summary are saved.
+        </p>
+        <div id="routesContainer"></div>
+      </section>
+    </div>
+
+    <!-- TAB 4: MALAYALAM -->
     <div id="pane-lang" class="tab-pane">
       <section class="card">
         <div class="card-head">
@@ -934,7 +949,7 @@
       </section>
     </div>
 
-    <!-- TAB 4: WARD INFO -->
+    <!-- TAB 5: WARD INFO -->
     <div id="pane-ward" class="tab-pane">
       <section class="card">
         <div class="card-head">
@@ -1070,6 +1085,10 @@
     <button type="button" class="nav-btn" data-target="pane-history">
       <span class="nav-ico">🕒</span>
       <span>History</span>
+    </button>
+    <button type="button" class="nav-btn" data-target="pane-routes">
+      <span class="nav-ico">🗺️</span>
+      <span>Routes</span>
     </button>
     <button type="button" class="nav-btn" data-target="pane-lang">
       <span class="nav-ico">🌐</span>
@@ -1643,6 +1662,7 @@
     function renderStats(logs) {
       const goal = Math.min(500, Math.max(5, parseFloat(fGoal.value) || 30));
       const member = getSessionMember();
+      renderRoutes(logs);
       const progressLogs = member ? logs.filter((item) => item.memberId === member.id) : logs;
       const totalKm = progressLogs.reduce((acc, item) => acc + item.km, 0);
       const steps = Math.round(totalKm * 1312);
@@ -1681,6 +1701,49 @@
           </div>
         `).join("");
     }
+
+    const gpsRouteSelect = document.getElementById("gpsRouteSelect");
+    const walkingRouteSelect = document.getElementById("fRoute");
+    const routeListContainer = document.getElementById("routesContainer");
+
+    function addWalkingRouteOption(route) {
+      [gpsRouteSelect, walkingRouteSelect].forEach((select) => {
+        if (![...select.options].some((option) => option.value === route)) {
+          select.add(new Option(route, route));
+        }
+      });
+    }
+
+    function renderRoutes(logs) {
+      const routes = [...new Set([
+        ...[...walkingRouteSelect.options].map((option) => option.value),
+        ...logs.map((item) => item.route)
+      ])];
+      routes.forEach(addWalkingRouteOption);
+      routeListContainer.innerHTML = routes.map((route) => {
+        const walkCount = logs.filter((item) => item.route === route).length;
+        const label = walkCount ? `${walkCount} logged ${walkCount === 1 ? "walk" : "walks"}` : "Suggested route";
+        return `
+          <div class="log-item">
+            <div>
+              <div class="log-title">${escapeHtml(route)}</div>
+              <div class="log-sub">${label}</div>
+            </div>
+            <button type="button" class="btn-soft" data-select-route="${escapeHtml(route)}" style="padding:6px 10px; font-size:11.5px;">Use route</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    routeListContainer.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-select-route]");
+      if (!button) return;
+      const route = button.dataset.selectRoute;
+      addWalkingRouteOption(route);
+      gpsRouteSelect.value = route;
+      walkingRouteSelect.value = route;
+      showPane("pane-track");
+    });
 
     async function refreshStats() {
       try {
@@ -1792,6 +1855,7 @@
         prevPt = null;
         gpsStart = Date.now();
         routeCoords = [];
+        if (routeLine) routeLine.setLatLngs([]);
         document.getElementById("gpsDist").textContent = "0.00 km";
         document.getElementById("gpsTimer").textContent = "00:00";
         gpsBtn.textContent = "Stop & Save Walk";
@@ -1810,9 +1874,9 @@
             const { latitude, longitude, accuracy } = pos.coords;
             if (accuracy > 45) return;
             const pt = [latitude, longitude];
+            routeCoords.push(pt);
             if (map && walkerMarker && routeLine) {
               walkerMarker.setLatLng(pt);
-              routeCoords.push(pt);
               routeLine.setLatLngs(routeCoords);
               map.panTo(pt);
             }
@@ -1840,7 +1904,7 @@
         if (gpsKm >= 0.01) {
           try {
             await saveLog({
-              route: "Live GPS Walk",
+              route: gpsRouteSelect.value || "Live GPS Walk",
               km: parseFloat(gpsKm.toFixed(2)),
               mins,
               date: getTodayLocalISO()

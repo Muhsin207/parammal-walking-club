@@ -68,26 +68,13 @@
     }
 
     .club-badge {
-      width: 46px;
-      height: 46px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       background: #fff;
-      color: var(--maroon-dark);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 13px;
-      line-height: 1.05;
+      object-fit: cover;
       border: 2px solid var(--gold);
       flex-shrink: 0;
-    }
-
-    .club-badge small {
-      font-size: 7px;
-      color: var(--maroon);
-      letter-spacing: 0.4px;
     }
 
     .club-title {
@@ -218,6 +205,15 @@
       height: 100%;
       object-fit: cover;
       display: block;
+    }
+
+    .slide-item-contained img {
+      object-fit: contain;
+      background: #450624;
+    }
+
+    .slide-item-contained .slide-caption {
+      display: none;
     }
 
     .slide-caption {
@@ -757,10 +753,7 @@
     <div class="hero-inner">
       <div class="hero-top">
         <div class="club-brand">
-          <div class="club-badge">
-            PWC
-            <small>WARD</small>
-          </div>
+          <img class="club-badge" src="/static/posters/parammal-walking-club-logo.jpg" alt="Parammal Walking Club logo" />
           <div>
             <div class="club-title">PARAMMAL WALKING CLUB</div>
             <div class="club-sub">Thachanattukara Panchayat • Ward Health</div>
@@ -1190,6 +1183,20 @@
         image: makeBannerDataUri("Sunday Community Group Walk", "All age groups welcome • Parammal Ward", "#56092E", "#1F0310"),
         caption: "Sunday Community Group Walk — Family & senior-friendly pace",
         tag: "SUNDAY SPECIAL"
+      },
+      {
+        id: 4,
+        image: "/static/posters/parammal-walking-club-inauguration.jpg",
+        caption: "Parammal Walking Club Inauguration — 21 November 2026, 2:30 PM",
+        tag: "INAUGURATION",
+        aspectRatio: 768 / 960
+      },
+      {
+        id: 5,
+        image: "/static/posters/parammal-walking-club-logo.jpg",
+        caption: "Parammal Walking Club — Our Official Logo",
+        tag: "OUR CLUB",
+        aspectRatio: 261 / 230
       }
     ];
 
@@ -1310,7 +1317,7 @@
       const dots = document.getElementById("slideDots");
 
       track.innerHTML = slides.map((s) => `
-        <div class="slide-item">
+        <div class="slide-item ${s.aspectRatio ? "slide-item-contained" : ""}">
           <img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.caption)}" />
           <div class="slide-caption">
             <span>${escapeHtml(s.caption)}</span>
@@ -1344,9 +1351,18 @@
     function updateSlideTransform() {
       const track = document.getElementById("slideTrack");
       const dots = document.querySelectorAll(".slide-dot");
+      const activeSlide = getSlides()[currentSlideIdx];
+      const sliderWrap = document.querySelector(".slider-wrap");
+      sliderWrap.style.height = activeSlide.aspectRatio
+        ? `${Math.min(sliderWrap.clientWidth / activeSlide.aspectRatio, 680)}px`
+        : "";
       track.style.transform = `translateX(-${currentSlideIdx * 100}%)`;
       dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIdx));
     }
+
+    window.addEventListener("resize", () => {
+      if (getSlides()[currentSlideIdx].aspectRatio) updateSlideTransform();
+    });
 
     document.getElementById("prevSlideBtn").addEventListener("click", () => {
       const slides = getSlides();

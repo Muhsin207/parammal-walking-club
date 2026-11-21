@@ -240,9 +240,13 @@ def normalized_email(value):
 
 def normalized_mobile(value):
     mobile = re.sub(r"\D", "", str(value or "").strip())
-    if not re.fullmatch(r"[0-9]{10,15}", mobile):
+    if not re.fullmatch(r"[6-9][0-9]{9}", mobile):
         return None
     return mobile
+
+
+def mobile_lookup_values(mobile):
+    return (mobile, f"0{mobile}", f"91{mobile}", f"0091{mobile}")
 
 
 def valid_http_url(value):
@@ -307,13 +311,13 @@ def register_member():
     display_name = str(payload.get("displayName") or "").strip()
     password = str(payload.get("password") or "")
     if not mobile:
-        return api_error("Enter a valid mobile number with 10 to 15 digits.", 400)
+        return api_error("Enter a valid 10-digit Indian mobile number starting with 6 to 9.", 400)
     if not 1 <= len(display_name) <= 80:
         return api_error("Enter a display name between 1 and 80 characters.", 400)
     if len(password) < 8 or len(password) > 128:
         return api_error("Password must contain 8 to 128 characters.", 400)
-    if Member.query.filter_by(mobile_number=mobile).one_or_none() is not None:
-        return api_error("An account with this mobile number already exists.", 409)
+    if Member.query.filter(Member.mobile_number.in_(mobile_lookup_values(mobile))).first() is not None:
+        return api_error("An account with this mobile number already exists. Choose Login to sign in.", 409)
 
     member = Member(
         id=uuid.uuid4(),
@@ -337,10 +341,19 @@ def login_member():
     payload = request.get_json(silent=True) or {}
     mobile = normalized_mobile(payload.get("mobile"))
     password = str(payload.get("password") or "")
-    if not mobile or not password:
-        return api_error("Enter your mobile number and password.", 400)
-    member = Member.query.filter_by(mobile_number=mobile).one_or_none()
-    if member is None or not member.password_hash or not check_password_hash(member.password_hash, password):
+    if not mobile:
+        return api_error("Enter a valid 10-digit Indian mobile number starting with 6 to 9.", 400)
+    if not password:
+        return api_error("Enter your password.", 400)
+    candidates = Member.query.filter(Member.mobile_number.in_(mobile_lookup_values(mobile))).all()
+    member = next(
+        (
+            candidate for candidate in candidates
+            if candidate.password_hash and check_password_hash(candidate.password_hash, password)
+        ),
+        None,
+    )
+    if member is None:
         return api_error("Invalid mobile number or password.", 401)
 
     session.clear()

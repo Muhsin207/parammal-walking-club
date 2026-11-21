@@ -287,6 +287,13 @@ def home():
     return send_from_directory(ROOT, "index.html")
 
 
+@app.get("/service-worker.js")
+def service_worker():
+    response = send_from_directory(ROOT / "static", "service-worker.js", mimetype="application/javascript")
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+
 @app.get("/api/health")
 def health():
     db.session.execute(text("SELECT 1"))

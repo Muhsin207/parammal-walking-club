@@ -4,7 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#6B0F3B" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Parammal Club" />
   <title>Parammal Walking Club — Ward Health & Distance Tracker</title>
+  <link rel="manifest" href="/static/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/static/pwa-icon-180.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@500;700&family=Noto+Serif+Malayalam:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -94,6 +98,38 @@
       display: flex;
       align-items: center;
       gap: 6px;
+    }
+
+    .install-app-row {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      margin: 4px 0 8px;
+    }
+
+    .install-app-btn {
+      border: 0;
+      border-radius: 999px;
+      background: var(--gold);
+      color: var(--maroon-dark);
+      padding: 7px 12px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .install-app-btn[hidden],
+    .install-app-help[hidden] {
+      display: none;
+    }
+
+    .install-app-help {
+      max-width: 100%;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: right;
     }
 
     .admin-pill {
@@ -363,6 +399,87 @@
       transition: width 0.3s ease;
     }
 
+    .weekly-range {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .weekly-total {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      color: var(--maroon-dark);
+    }
+
+    .weekly-total strong {
+      font-size: 21px;
+      font-weight: 800;
+    }
+
+    .weekly-total span {
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .weekly-chart {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      height: 180px;
+      margin-top: 16px;
+    }
+
+    .weekly-day {
+      display: grid;
+      grid-template-rows: 16px minmax(0, 1fr) 16px;
+      justify-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .weekly-day-value {
+      color: var(--muted);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .weekly-bar-track {
+      display: flex;
+      align-items: flex-end;
+      width: min(30px, 72%);
+      min-width: 14px;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 8px 8px 3px 3px;
+      background: #F8F1F4;
+    }
+
+    .weekly-bar {
+      width: 100%;
+      height: 0%;
+      border-radius: 8px 8px 3px 3px;
+      background: linear-gradient(180deg, var(--gold), var(--maroon));
+      transition: height 0.3s ease;
+    }
+
+    .weekly-day-label {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .weekly-day.is-today .weekly-day-label {
+      color: var(--maroon);
+      font-weight: 800;
+    }
+
+    .weekly-chart-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+    }
+
     .btn-gold {
       width: 100%;
       background: var(--gold);
@@ -615,6 +732,30 @@
       margin-bottom: 16px;
     }
 
+    .home-screen-help-copy {
+      margin-bottom: 16px;
+      color: #FFE484;
+      font-family: "Noto Sans Malayalam", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.75;
+      text-align: left;
+    }
+
+    .home-screen-help-panel {
+      box-sizing: border-box;
+      max-height: calc(100vh - 32px);
+      max-height: calc(100dvh - 32px);
+      overflow-y: auto;
+    }
+
+    .home-screen-help-copy p {
+      margin: 0 0 8px;
+    }
+
+    .home-screen-help-copy p:last-child {
+      margin-bottom: 0;
+    }
+
     .ann-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -784,6 +925,11 @@
         </div>
       </div>
 
+      <div class="install-app-row">
+        <button type="button" class="install-app-btn" id="installAppBtn" hidden>Install App</button>
+        <p class="install-app-help" id="installAppHelp" role="status" hidden></p>
+      </div>
+
       <!-- Optional fixed inauguration poster view -->
       <div id="inaugurationPosterSection">
         <div class="inaugural-bar">
@@ -828,45 +974,12 @@
     <!-- TAB 1: TRACK -->
     <div id="pane-track" class="tab-pane active">
       <section class="card">
-        <div class="card-head">
-          <div class="card-title" id="progressTitle">Club Walking Progress</div>
-          <span style="font-size:11px; color:var(--muted); font-weight:700;" id="walkerBadge"></span>
-        </div>
-
-        <div class="stats-3">
-          <div>
-            <div class="stat-label">Total Distance</div>
-            <div class="stat-num" id="sumKm">0.00 km</div>
-          </div>
-          <div>
-            <div class="stat-label">Est. Steps</div>
-            <div class="stat-num" id="sumSteps">0</div>
-          </div>
-          <div>
-            <div class="stat-label">Est. Calories</div>
-            <div class="stat-num" id="sumCal">0 kcal</div>
-          </div>
-        </div>
-
-        <div class="goal-wrap">
-          <div class="goal-meta">
-            <span>Monthly Goal: <strong id="goalDisplay">30 km</strong></span>
-            <strong style="color:var(--maroon);" id="goalPctDisplay">0%</strong>
-          </div>
-          <div class="bar-bg">
-            <div class="bar-fill" id="goalBar"></div>
-          </div>
-        </div>
-
-        <div style="margin-top:12px;">
-          <button type="button" class="btn-gold" id="toggleGpsBtn">Login to Start Walking</button>
-        </div>
-      </section>
-
-      <section class="card">
         <div class="live-strip">
           <span>📍 Live GPS: <span id="gpsTimer">00:00</span> / <span id="gpsDist">0.00 km</span> · <span id="gpsSteps">0</span> estimated steps</span>
           <span style="font-size:11px; color:var(--muted);" id="gpsStatusLabel">Ready</span>
+        </div>
+        <div style="margin:10px 0;">
+          <button type="button" class="btn-gold" id="toggleGpsBtn">Login to Start Walking</button>
         </div>
         <label for="gpsRouteSelect">Walking place / route</label>
         <select id="gpsRouteSelect" style="margin-bottom:10px;"></select>
@@ -968,20 +1081,30 @@
       </section>
     </div>
 
-    <!-- TAB 4: MALAYALAM -->
-    <div id="pane-lang" class="tab-pane">
+    <!-- TAB 4: PROGRESS -->
+    <div id="pane-progress" class="tab-pane">
       <section class="card">
-        <div class="card-head">
-          <div class="card-title">മലയാളം / English Summary</div>
+        <div class="card-head" style="align-items:flex-start;">
+          <div>
+            <div class="card-title" id="progressTitle">Weekly Walking Progress</div>
+            <div class="weekly-range" id="weeklyRange"></div>
+          </div>
+          <div class="weekly-total"><strong id="weeklyTotal">0.00</strong><span>km</span></div>
         </div>
-        <p style="font-size:13px; line-height:1.65; color:var(--text);">
-          <strong>പാറമ്മൽ വാക്കിംഗ് ക്ലബ്ബ്</strong> — തച്ചനാട്ടുകര പഞ്ചായത്തിലെ പാറമ്മൽ വാർഡിൽ ആരോഗ്യകരമായ നടത്ത ശീലം വളർത്തുന്നതിനുള്ള കൂട്ടായ്മ.
-        </p>
-        <div style="margin-top:12px; padding:12px; border-radius:12px; background:var(--cream); font-size:12.5px;">
-          <div><strong>ആകെ ദൂരം (Total Distance):</strong> <span id="mlTotalKm">0.00 km</span></div>
-          <div style="margin-top:4px;"><strong>ഏകദേശ ചുവടുകൾ (Steps):</strong> <span id="mlTotalSteps">0</span></div>
-          <div style="margin-top:4px;"><strong>സ്ഥലം:</strong> Legacy AUP School, Parammal, Thachanattukara</div>
+
+        <div class="goal-wrap">
+          <div class="goal-meta">
+            <span>Weekly target: <strong id="weeklyGoalDisplay">0.0 km</strong></span>
+            <strong style="color:var(--maroon);" id="weeklyGoalPct">0%</strong>
+          </div>
+          <div class="bar-bg" id="weeklyGoalProgress" role="progressbar" aria-label="Weekly walking goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="bar-fill" id="weeklyGoalBar"></div>
+          </div>
+          <div id="weeklyGoalSummary" style="font-size:11px; color:var(--muted); margin-top:5px;"></div>
         </div>
+
+        <div class="weekly-chart" id="weeklyChart" role="group" aria-label="Daily walking distance this week"></div>
+        <p class="weekly-chart-note" id="weeklyChartNote"></p>
       </section>
     </div>
 
@@ -1127,9 +1250,9 @@
       <span class="nav-ico">🗺️</span>
       <span>Routes</span>
     </button>
-    <button type="button" class="nav-btn" data-target="pane-lang">
-      <span class="nav-ico">🌐</span>
-      <span>മലയാളം</span>
+    <button type="button" class="nav-btn" data-target="pane-progress">
+      <span class="nav-ico">📈</span>
+      <span>Progress</span>
     </button>
     <button type="button" class="nav-btn" data-target="pane-ward">
       <span class="nav-ico">ⓘ</span>
@@ -1191,6 +1314,22 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="homeScreenHelpModal" role="dialog" aria-modal="true" aria-labelledby="homeScreenHelpTitle" aria-describedby="homeScreenHelpCopy">
+    <div class="announcement-modal home-screen-help-panel">
+      <button type="button" class="modal-close" id="closeHomeScreenHelpX" aria-label="അടയ്ക്കുക">✕</button>
+      <img class="announcement-logo" src="/static/posters/parammal-walking-club-logo.jpg" alt="Parammal Walking Club logo" />
+      <div class="ann-heading-ml" id="homeScreenHelpTitle" lang="ml">ആപ്പ് ഹോം സ്‌ക്രീനിലേക്ക് ചേർക്കുന്ന വിധം</div>
+      <div class="home-screen-help-copy" id="homeScreenHelpCopy" lang="ml">
+        <p>പാറമ്മൽ വാക്കിംഗ് ക്ലബ് ആപ്പ് ഹോം സ്‌ക്രീനിൽ ചേർത്താൽ, ഒരു സ്പർശത്തിൽ തുറക്കാം.</p>
+        <p><strong>ആൻഡ്രോയ്ഡ്:</strong> മുകളിലുള്ള “Install App” ബട്ടൺ അമർത്തുക. അത് കാണുന്നില്ലെങ്കിൽ ബ്രൗസർ മെനുവിൽ നിന്ന് “Add to Home Screen” തിരഞ്ഞെടുക്കുക.</p>
+        <p><strong>ഐഫോൺ:</strong> Safari-യിലെ “Share” ബട്ടൺ അമർത്തി “Add to Home Screen” തിരഞ്ഞെടുക്കുക.</p>
+      </div>
+      <div class="ann-actions single-action">
+        <button type="button" class="ann-btn-gold" id="dismissHomeScreenHelp">ശരി, മനസ്സിലായി</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     let currentMember = null;
@@ -1198,26 +1337,26 @@
     const defaultSlides = [
       {
         id: 4,
-        image: "/static/posters/parammal-walking-club-inauguration.jpg",
-        caption: "Parammal Walking Club Inauguration — 21 November 2026, 2:30 PM",
-        tag: "INAUGURATION",
-        aspectRatio: 768 / 960
+        image: "/static/posters/parammal-walking-club-member-poster.png",
+        caption: "Parammal Walking Club member poster",
+        tag: "WELCOME",
+        aspectRatio: 1024 / 768
       },
       {
         id: 5,
-        image: "/static/posters/parammal-walking-club-inauguration.jpg",
-        caption: "Parammal Walking Club Inauguration — 21 November 2026, 2:30 PM",
-        tag: "INAUGURATION",
-        aspectRatio: 768 / 960
-      },
-      {
-        id: 6,
         type: "video",
         video: "/static/videos/parammal-walking-club-intro-ml.mp4",
         poster: "/static/videos/parammal-walking-club-intro-poster.jpg",
-        caption: "Parammal Walking Club — Malayalam introduction",
+        caption: "Parammal Walking Club — app features with music",
         tag: "WATCH INTRO",
-        aspectRatio: 720 / 1280
+        aspectRatio: 12 / 6
+      },
+      {
+        id: 6,
+        image: "/static/posters/parammal-walking-club-member-poster.png",
+        caption: "Parammal Walking Club member poster",
+        tag: "WALK WITH US",
+        aspectRatio: 1024 / 768
       }
     ];
 
@@ -1462,7 +1601,28 @@
 
     // Optional Announcement Modal
     const annModal = document.getElementById("annModalBackdrop");
+    const homeScreenHelpModal = document.getElementById("homeScreenHelpModal");
     let annState = { ...defaultAnnouncement };
+
+    function showHomeScreenHelp() {
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        navigator.standalone === true;
+      if (isStandalone) return;
+
+      homeScreenHelpModal.classList.add("open");
+      document.getElementById("dismissHomeScreenHelp").focus();
+    }
+
+    function closeHomeScreenHelp() {
+      homeScreenHelpModal.classList.remove("open");
+    }
+
+    document.getElementById("closeHomeScreenHelpX").addEventListener("click", closeHomeScreenHelp);
+    document.getElementById("dismissHomeScreenHelp").addEventListener("click", closeHomeScreenHelp);
+    homeScreenHelpModal.addEventListener("click", (e) => {
+      if (e.target === homeScreenHelpModal) closeHomeScreenHelp();
+    });
 
     function openAnnouncementModal(force = false) {
       annState = { ...defaultAnnouncement, ...siteContent.announcement };
@@ -1743,23 +1903,53 @@
       const member = getSessionMember();
       renderRoutes(logs);
       const progressLogs = member ? logs.filter((item) => item.memberId === member.id) : logs;
-      const totalKm = progressLogs.reduce((acc, item) => acc + item.km, 0);
-      const steps = Math.round(totalKm * 1312);
-      const cal = Math.round(totalKm * 55);
-      const pct = Math.min(100, Math.round((totalKm / goal) * 100));
+      const todayIso = getTodayLocalISO();
+      const today = new Date(`${todayIso}T00:00:00`);
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+      const dailyKm = Array(7).fill(0);
+      progressLogs.forEach((item) => {
+        const walkDate = new Date(`${item.date}T00:00:00`);
+        const dayIndex = Math.round((walkDate.getTime() - weekStart.getTime()) / 86400000);
+        if (dayIndex >= 0 && dayIndex < dailyKm.length) dailyKm[dayIndex] += item.km;
+      });
 
-      document.getElementById("sumKm").textContent = `${totalKm.toFixed(2)} km`;
-      document.getElementById("progressTitle").textContent = member ? "My Ward Health Progress" : "Club Walking Progress";
-      document.getElementById("sumSteps").textContent = steps.toLocaleString();
-      document.getElementById("sumCal").textContent = `${cal.toLocaleString()} kcal`;
-      document.getElementById("goalDisplay").textContent = `${goal} km`;
-      document.getElementById("goalPctDisplay").textContent = `${pct}%`;
-      document.getElementById("goalBar").style.width = `${pct}%`;
+      const weeklyKm = dailyKm.reduce((total, distance) => total + distance, 0);
+      const weeklyGoal = goal * 12 / 52;
+      const weeklyPct = Math.min(100, Math.round((weeklyKm / weeklyGoal) * 100));
+      const currentDayIndex = (today.getDay() + 6) % 7;
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      const dateLabel = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
 
-      document.getElementById("mlTotalKm").textContent = `${totalKm.toFixed(2)} km`;
-      document.getElementById("mlTotalSteps").textContent = steps.toLocaleString();
+      document.getElementById("progressTitle").textContent = member ? "My Weekly Walking Progress" : "Club Weekly Walking Progress";
+      document.getElementById("weeklyRange").textContent = `${dateLabel.format(weekStart)} - ${dateLabel.format(weekEnd)}`;
+      document.getElementById("weeklyTotal").textContent = weeklyKm.toFixed(2);
+      document.getElementById("weeklyGoalDisplay").textContent = `${weeklyGoal.toFixed(1)} km`;
+      document.getElementById("weeklyGoalPct").textContent = `${weeklyPct}%`;
+      document.getElementById("weeklyGoalBar").style.width = `${weeklyPct}%`;
+      document.getElementById("weeklyGoalProgress").setAttribute("aria-valuenow", String(weeklyPct));
+      document.getElementById("weeklyGoalSummary").textContent =
+        `${weeklyKm.toFixed(2)} km of ${weeklyGoal.toFixed(1)} km this week`;
 
-      document.getElementById("walkerBadge").textContent = member ? `👤 ${member.name}` : "";
+      const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const maxDailyKm = Math.max(...dailyKm);
+      document.getElementById("weeklyChart").innerHTML = dailyKm.map((distance, index) => {
+        const dayDate = new Date(weekStart);
+        dayDate.setDate(weekStart.getDate() + index);
+        const dayName = new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(dayDate);
+        const barHeight = maxDailyKm === 0 ? 0 : (distance / maxDailyKm) * 100;
+        const todayClass = index === currentDayIndex ? " is-today" : "";
+        return `
+          <div class="weekly-day${todayClass}" role="img" aria-label="${dayName}: ${distance.toFixed(2)} km">
+            <span class="weekly-day-value">${distance.toFixed(1)}</span>
+            <div class="weekly-bar-track"><div class="weekly-bar" style="height:${barHeight.toFixed(1)}%"></div></div>
+            <span class="weekly-day-label" aria-hidden="true">${dayLabels[index]}</span>
+          </div>
+        `;
+      }).join("");
+      document.getElementById("weeklyChartNote").textContent =
+        weeklyKm ? "Daily bars are scaled to the busiest day this week." : "No walks recorded this week yet.";
 
       const histEl = document.getElementById("historyContainer");
       if (!logs.length) {
@@ -2155,6 +2345,7 @@
         });
         currentMember = result;
         await syncMemberSession();
+        showHomeScreenHelp();
       } catch (error) {
         memberLoginError.textContent = error.message || "Could not create the account.";
       } finally {
@@ -2176,6 +2367,7 @@
         });
         currentMember = result;
         await syncMemberSession();
+        showHomeScreenHelp();
       } catch (error) {
         memberLoginError.textContent = error.message || "Could not sign in.";
       } finally {
@@ -2201,6 +2393,7 @@
       renderHeaderBanner();
       const urlParams = new URLSearchParams(window.location.search);
       const loginRequested = urlParams.get("login") === "1";
+      const authResult = urlParams.get("auth");
       try {
         await apiRequest("/api/health");
         await loadSiteContent();
@@ -2208,11 +2401,12 @@
         renderHeaderBanner();
         if (loginRequested) {
           openMemberLogin();
+        } else if (authResult === "verified") {
+          showHomeScreenHelp();
         } else {
           openAnnouncementModal(false);
         }
         if (window.location.hash.toLowerCase() === "#admin") openAdminPanel();
-        const authResult = urlParams.get("auth");
         if (authResult === "verified") showAppStatus("Sign-in successful.");
         if (authResult === "expired") showAppStatus("That sign-in link is expired or has already been used. Request a new link.");
         if (loginRequested || authResult) {
@@ -2228,6 +2422,65 @@
     }
 
     initializeApp().catch((error) => displayBackendError("App startup failed", error));
+  </script>
+  <script>
+    (() => {
+      const installButton = document.getElementById("installAppBtn");
+      const installHelp = document.getElementById("installAppHelp");
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        navigator.standalone === true;
+      const isAppleMobile =
+        /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      let installPrompt = null;
+
+      if (!isStandalone && isAppleMobile) {
+        installButton.hidden = false;
+        installButton.textContent = "Add to Home Screen";
+      }
+
+      window.addEventListener("beforeinstallprompt", (event) => {
+        if (isStandalone) return;
+        event.preventDefault();
+        installPrompt = event;
+        installButton.hidden = false;
+        installButton.textContent = "Install App";
+        installHelp.hidden = true;
+      });
+
+      installButton.addEventListener("click", async () => {
+        if (!installPrompt) {
+          installHelp.textContent = "In Safari, tap Share, then choose Add to Home Screen.";
+          installHelp.hidden = false;
+          return;
+        }
+
+        installButton.disabled = true;
+        try {
+          await installPrompt.prompt();
+          await installPrompt.userChoice;
+        } catch (error) {
+          console.error("Could not open the app install prompt.", error);
+          installHelp.textContent = "The install prompt could not be opened. Use your browser menu to install the app.";
+          installHelp.hidden = false;
+        } finally {
+          installPrompt = null;
+          installButton.hidden = true;
+          installButton.disabled = false;
+        }
+      });
+
+      window.addEventListener("appinstalled", () => {
+        installButton.hidden = true;
+        installHelp.hidden = true;
+      });
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/service-worker.js")
+          .catch((error) => console.error("Service worker registration failed.", error));
+      }
+    })();
   </script>
 </body>
 </html>

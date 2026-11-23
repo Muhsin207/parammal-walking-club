@@ -1270,8 +1270,7 @@
         <button type="button" class="login-tab" id="registerTab" data-login-tab="register">Create Account</button>
       </div>
       <p style="font-size:11px; line-height:1.45; color:var(--muted); margin-bottom:12px;">
-        Sign in or create an account before starting a live walk. Member display names and walk dates, routes, and distances are visible publicly.
-        If you already have an account, choose Login. Your sign-in stays active on this device for 30 days.
+        Member display names and walk dates, routes, and distances are visible publicly. After the Supabase move, choose Create Account and set a new password with your mobile number; old passwords are not transferred. Existing walk records stay in public history but are not linked to new personal progress. Mobile numbers are not SMS-verified, and password recovery requires help from an administrator.
       </p>
 
       <form id="memberLoginForm">
@@ -1332,6 +1331,9 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/static/supabase-config.js"></script>
+  <script src="/static/supabase-client.js"></script>
   <script>
     let currentMember = null;
 
@@ -1384,21 +1386,7 @@
     }
 
     async function apiRequest(path, options) {
-      const requestOptions = { credentials: "same-origin", ...(options || {}) };
-      requestOptions.headers = { Accept: "application/json", ...(requestOptions.headers || {}) };
-      if (requestOptions.body && typeof requestOptions.body !== "string") {
-        requestOptions.headers["Content-Type"] = "application/json";
-        requestOptions.body = JSON.stringify(requestOptions.body);
-      }
-
-      const response = await fetch(path, requestOptions);
-      const payload = response.status === 204 ? {} : await response.json();
-      if (!response.ok) {
-        const error = new Error(payload.error || `Request failed (${response.status}).`);
-        error.status = response.status;
-        throw error;
-      }
-      return payload;
+      return window.PWCSupabase.apiRequest(path, options);
     }
 
     function displayBackendError(context, error) {
@@ -1859,28 +1847,11 @@
     }
 
     async function loadLogs() {
-      const pageSize = 500;
-      const rows = [];
-      let offset = 0;
-      while (true) {
-        const page = await apiRequest(`/api/walks?limit=${pageSize}&offset=${offset}`);
-        rows.push(...page.items);
-        if (rows.length >= page.total || page.items.length < pageSize) break;
-        offset += pageSize;
-      }
-      return rows;
+      return window.PWCSupabase.loadLogs();
     }
 
     async function saveLog(log) {
-      await apiRequest("/api/walks", {
-        method: "POST",
-        body: {
-          route: log.route,
-          km: log.km,
-          mins: log.mins,
-          date: log.date
-        }
-      });
+      return window.PWCSupabase.createWalk(log);
     }
 
     function escapeHtml(s) {
@@ -1898,6 +1869,7 @@
     fName.readOnly = true;
     fGoal.value = "30";
     let cachedLogs = [];
+    let hasMoreWalkLogs = false;
 
     function renderStats(logs) {
       const goal = Math.min(500, Math.max(5, parseFloat(fGoal.value) || 30));
@@ -1960,7 +1932,11 @@
 
       histEl.innerHTML = logs
         .slice()
-        .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+        .sort((a, b) =>
+          b.date.localeCompare(a.date) ||
+          b.createdAt - a.createdAt ||
+          String(b.id).localeCompare(String(a.id), undefined, { numeric: true })
+        )
         .map((item) => `
           <div class="log-item">
             <div>
@@ -1970,6 +1946,26 @@
             <span class="km-tag">+${item.km.toFixed(2)} km</span>
           </div>
         `).join("");
+      if (hasMoreWalkLogs) {
+        const loadMoreButton = document.createElement("button");
+        loadMoreButton.type = "button";
+        loadMoreButton.className = "btn-soft";
+        loadMoreButton.style.cssText = "display:block; margin:12px auto;";
+        loadMoreButton.textContent = "Load older walks";
+        loadMoreButton.addEventListener("click", async () => {
+          loadMoreButton.disabled = true;
+          try {
+            const page = await window.PWCSupabase.loadMoreLogs();
+            cachedLogs.push(...page.items);
+            hasMoreWalkLogs = page.hasMore;
+            renderStats(cachedLogs);
+          } catch (error) {
+            displayBackendError("Could not load older walks", error);
+            loadMoreButton.disabled = false;
+          }
+        });
+        histEl.append(loadMoreButton);
+      }
     }
 
     const gpsRouteSelect = document.getElementById("gpsRouteSelect");
@@ -2052,7 +2048,9 @@
 
     async function refreshStats() {
       try {
-        cachedLogs = await loadLogs();
+        const page = await loadLogs();
+        cachedLogs = page.items;
+        hasMoreWalkLogs = page.hasMore;
         renderStats(cachedLogs);
       } catch (error) {
         displayBackendError("Could not load walk records", error);
@@ -2106,7 +2104,7 @@
     document.getElementById("exportCsvBtn").addEventListener("click", async () => {
       let logs;
       try {
-        logs = await loadLogs();
+        logs = await window.PWCSupabase.loadAllLogs();
       } catch (error) {
         displayBackendError("Could not export walk records", error);
         return;

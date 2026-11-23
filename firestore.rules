@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function ownsUser(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read: if ownsUser(userId);
+      allow create: if ownsUser(userId)
+        && request.resource.data.keys().hasOnly(['displayName', 'monthlyGoal', 'createdAt'])
+        && request.resource.data.keys().hasAll(['displayName', 'monthlyGoal', 'createdAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.monthlyGoal == 30
+        && request.resource.data.createdAt == request.time;
+      allow update: if ownsUser(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['monthlyGoal'])
+        && request.resource.data.monthlyGoal is number
+        && request.resource.data.monthlyGoal >= 5
+        && request.resource.data.monthlyGoal <= 500;
+      allow delete: if false;
+    }
+
+    match /walkLogs/{walkId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'memberId', 'name', 'route', 'km', 'mins', 'date', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'memberId', 'name', 'route', 'km', 'mins', 'date', 'createdAt'
+        ])
+        && request.resource.data.memberId == request.auth.uid
+        && request.resource.data.name ==
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName
+        && request.resource.data.route is string
+        && request.resource.data.route.size() >= 1
+        && request.resource.data.route.size() <= 120
+        && request.resource.data.km is number
+        && request.resource.data.km >= 0.05
+        && request.resource.data.km <= 100
+        && request.resource.data.mins is int
+        && request.resource.data.mins >= 1
+        && request.resource.data.mins <= 600
+        && request.resource.data.date is string
+        && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /siteContent/{contentId} {
+      allow read: if contentId == 'main';
+      allow write: if contentId == 'main' && isAdmin();
+    }
+  }
+}

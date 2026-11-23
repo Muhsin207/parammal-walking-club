@@ -32,11 +32,26 @@ if not database_path.is_absolute():
 database_path = database_path.resolve()
 database_path.parent.mkdir(parents=True, exist_ok=True)
 
+
+def load_or_create_secret_key(key_path):
+    key_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with key_path.open("x", encoding="utf-8") as secret_key_file:
+            secret_key_file.write(secrets.token_urlsafe(48))
+    except FileExistsError:
+        pass
+    secret_key = key_path.read_text(encoding="utf-8").strip()
+    if len(secret_key) < 32:
+        raise RuntimeError(f"Generated Flask secret key at {key_path} is invalid.")
+    return secret_key
+
+
 secret_key = os.environ.get("SECRET_KEY", "").strip()
 if environment == "production" and len(secret_key) < 32:
     raise RuntimeError("Set SECRET_KEY to a random value of at least 32 characters in production.")
 if not secret_key:
-    secret_key = secrets.token_urlsafe(48)
+    secret_key_path = ROOT / "data" / ".secret_key"
+    secret_key = load_or_create_secret_key(secret_key_path)
 
 app = Flask(__name__)
 app.config.update(

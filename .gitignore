@@ -5,3 +5,6 @@ __pycache__/
 /data/*.db
 /data/*.sqlite
 /data/*.sqlite3
+/data/.secret_key
+/dist/
+serviceAccount*.json

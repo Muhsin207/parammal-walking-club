@@ -11,7 +11,7 @@ os.environ["DATABASE_PATH"] = str(Path(_test_directory.name) / "test.sqlite3")
 os.environ["SECRET_KEY"] = "temporary-test-secret-key-not-for-production"
 
 import app as app_module
-from app import Member, app, db, generate_password_hash, normalized_mobile
+from app import Member, app, db, generate_password_hash, load_or_create_secret_key, normalized_mobile
 
 
 class MobileAuthTests(TestCase):
@@ -95,3 +95,11 @@ class MobileAuthTests(TestCase):
         restored_client = app.test_client()
         restored_client.set_cookie("pwc_session", session_cookie.value)
         self.assertEqual(restored_client.get("/api/auth/me").status_code, 200)
+
+    def test_development_secret_key_is_stable_across_restarts(self):
+        secret_key_path = Path(_test_directory.name) / "development.secret_key"
+
+        first_secret_key = load_or_create_secret_key(secret_key_path)
+        restarted_secret_key = load_or_create_secret_key(secret_key_path)
+        self.assertEqual(restarted_secret_key, first_secret_key)
+        self.assertGreaterEqual(len(first_secret_key), 32)

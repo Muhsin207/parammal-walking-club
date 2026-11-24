@@ -40,6 +40,20 @@
     if (configurationError) throw makeError(configurationError.message, 503);
   }
 
+  async function getWeeklyTopper() {
+    await ensureSupabaseReady();
+    const { data, error } = await supabase.rpc("get_weekly_topper");
+    if (error) {
+      if (error.code === "PGRST202") {
+        console.error("Supabase weekly topper is unavailable until migration 004 is applied.", error);
+        throw makeError("Weekly topper setup is incomplete. Run supabase/migrations/004_weekly_topper.sql.", 503);
+      }
+      throw normalizeSupabaseError(error, "weekly topper");
+    }
+    if (!Array.isArray(data)) throw makeError("Unexpected weekly topper response.", 500);
+    return data;
+  }
+
   function normalizedMobile(value) {
     const mobile = String(value || "").replace(/\D/g, "");
     return /^[6-9]\d{9}$/.test(mobile) ? mobile : null;
@@ -357,5 +371,5 @@
     return { id: String(data.id) };
   }
 
-  window.PWCSupabase = { apiRequest, loadLogs, loadMoreLogs, loadAllLogs, createWalk };
+  window.PWCSupabase = { apiRequest, getWeeklyTopper, loadLogs, loadMoreLogs, loadAllLogs, createWalk };
 })();

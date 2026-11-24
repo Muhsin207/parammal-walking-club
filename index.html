@@ -732,6 +732,40 @@
       margin-bottom: 16px;
     }
 
+    .weekly-topper-card {
+      margin: 8px 0 14px;
+      padding: 12px;
+      border: 1px solid rgba(255, 228, 132, 0.6);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .weekly-topper-title {
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+
+    .weekly-topper-name {
+      margin-top: 5px;
+      font-size: 17px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .weekly-topper-distance {
+      margin-top: 3px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .weekly-topper-week {
+      margin-top: 3px;
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 11px;
+    }
+
     .home-screen-help-copy {
       margin-bottom: 16px;
       color: #FFE484;
@@ -907,7 +941,7 @@
 </head>
 <body>
 
-  <!-- Top header with an automatically rotating poster carousel -->
+  <!-- Top header with the member poster -->
   <header class="hero">
     <div class="hero-inner">
       <div class="hero-top">
@@ -956,12 +990,9 @@
         </div>
       </div>
 
-      <!-- Automatically rotating photo-poster slideshow -->
+      <!-- Single member poster -->
       <div id="photoSliderSection" style="display:none;">
         <div class="slider-wrap" id="sliderWrap">
-          <div class="slide-dots" id="slideDots" style="display:none;"></div>
-          <button type="button" class="slide-nav slide-prev" id="prevSlideBtn" aria-label="Previous slide" style="display:none;">‹</button>
-          <button type="button" class="slide-nav slide-next" id="nextSlideBtn" aria-label="Next slide" style="display:none;">›</button>
           <div class="slide-track" id="slideTrack"></div>
         </div>
       </div>
@@ -1129,46 +1160,13 @@
     <div id="pane-admin" class="tab-pane">
       <section class="card">
         <div class="card-head">
-          <div class="card-title">Admin Panel — Poster, Slides &amp; Pop-Up</div>
+          <div class="card-title">Admin Panel — Pop-Up Message</div>
           <button type="button" class="btn-soft" id="closeAdminBtn" style="padding:5px 10px; font-size:11.5px;">Back</button>
         </div>
 
         <p id="adminAccessMessage" style="font-size:12px; color:var(--muted); margin-bottom:10px;"></p>
 
         <div id="adminEditorBox" style="display:none;">
-          <!-- Header Banner Display Mode -->
-          <div style="margin-bottom:14px;">
-            <label for="bannerModeSelect">Top Banner Schedule Mode</label>
-            <select id="bannerModeSelect">
-              <option value="auto">Auto: Rotate Photo Posters</option>
-              <option value="poster">Show Fixed Inauguration Poster</option>
-              <option value="slides">Force Photo Slideshow</option>
-            </select>
-            <p id="bannerStatusHint" style="font-size:11px; color:var(--muted); margin-top:4px;"></p>
-          </div>
-
-          <!-- Manage Photo Slides -->
-          <div style="border-top:1px solid var(--border); padding-top:12px; margin-bottom:14px;">
-            <div class="card-title" style="font-size:13.5px; margin-bottom:8px;">Manage Rotating Photo Posters</div>
-            <div id="adminSlidesList"></div>
-
-            <div class="grid-2" style="margin-top:8px;">
-              <div>
-                <label for="newSlideCaption">Slide Caption</label>
-                <input type="text" id="newSlideCaption" placeholder="e.g., Morning Ward Walk @ Parammal" />
-              </div>
-              <div>
-                <label for="newSlideTag">Badge Tag</label>
-                <input type="text" id="newSlideTag" placeholder="e.g., WARD WALK" />
-              </div>
-              <div>
-                <label for="newSlideUrl">Photo URL (optional)</label>
-                <input type="text" id="newSlideUrl" placeholder="https://..." />
-              </div>
-            </div>
-            <button type="button" class="btn-soft" id="addSlideBtn" style="margin-top:8px; width:100%;">+ Add Photo to Slideshow</button>
-          </div>
-
           <!-- Optional Announcement Pop-Up -->
           <div style="border-top:1px solid var(--border); padding-top:12px;">
             <div class="toggle-row">
@@ -1225,6 +1223,12 @@
       <img class="announcement-logo" src="/static/posters/parammal-walking-club-logo.jpg" alt="Parammal Walking Club logo" />
       <div class="ann-heading" id="annModalTitle"></div>
       <div class="ann-heading-ml" id="annModalTitleMl"></div>
+      <div id="weeklyTopperCard" class="weekly-topper-card" hidden>
+        <div class="weekly-topper-title">🏆 WEEKLY TOPPER · ആഴ്ചയിലെ താരം</div>
+        <div id="weeklyTopperName" class="weekly-topper-name"></div>
+        <div id="weeklyTopperDistance" class="weekly-topper-distance"></div>
+        <div id="weeklyTopperWeek" class="weekly-topper-week"></div>
+      </div>
 
       <p class="ann-body-en" id="annModalBodyEn"></p>
       <p class="ann-body-ml" id="annModalBodyMl"></p>
@@ -1270,7 +1274,7 @@
         <button type="button" class="login-tab" id="registerTab" data-login-tab="register">Create Account</button>
       </div>
       <p style="font-size:11px; line-height:1.45; color:var(--muted); margin-bottom:12px;">
-        Your walk records are private to your account. After the Supabase move, choose Create Account and set a new password with your mobile number; old passwords are not transferred. Older walk records are not linked to new accounts and will not appear in personal history. Mobile numbers are not SMS-verified, and password recovery requires help from an administrator.
+        Your individual walk history is private to your account. The weekly topper’s display name and total distance are shared publicly. After the Supabase move, choose Create Account and set a new password with your mobile number; old passwords are not transferred. Older walk records are not linked to new accounts and will not appear in personal history. Mobile numbers are not SMS-verified, and password recovery requires help from an administrator.
       </p>
 
       <form id="memberLoginForm">
@@ -1303,7 +1307,7 @@
           </div>
           <label style="display:flex; align-items:flex-start; gap:7px; font-size:11px; line-height:1.4;">
             <input type="checkbox" id="registerPublicConsent" required style="width:auto; margin-top:2px;" />
-            I agree that my walk records will be private to my account.
+            I understand my walk history is private, but the weekly topper’s name and total distance are announced publicly.
           </label>
           <button type="submit" class="btn-maroon" style="width:100%;">Create account</button>
         </div>
@@ -1337,31 +1341,11 @@
   <script>
     let currentMember = null;
 
-    const defaultSlides = [
-      {
-        id: 4,
-        image: "/static/posters/parammal-walking-club-member-poster.png",
-        caption: "Parammal Walking Club member poster",
-        tag: "WELCOME",
-        aspectRatio: 1024 / 768
-      },
-      {
-        id: 5,
-        type: "video",
-        video: "/static/videos/parammal-walking-club-intro-ml.mp4",
-        poster: "/static/videos/parammal-walking-club-intro-poster.jpg",
-        caption: "Parammal Walking Club — app features with music",
-        tag: "WATCH INTRO",
-        aspectRatio: 12 / 6
-      },
-      {
-        id: 6,
-        image: "/static/posters/parammal-walking-club-member-poster.png",
-        caption: "Parammal Walking Club member poster",
-        tag: "WALK WITH US",
-        aspectRatio: 1024 / 768
-      }
-    ];
+    const memberPoster = {
+      image: "/static/posters/parammal-walking-club-member-poster.png",
+      caption: "Parammal Walking Club member poster",
+      aspectRatio: 1024 / 768
+    };
 
     const defaultAnnouncement = {
       enabled: true,
@@ -1430,145 +1414,24 @@
       return new Date(date.getTime() - localOffset).toISOString().slice(0, 10);
     }
 
-    // The automatic mode keeps the poster carousel visible year-round.
-    let currentSlideIdx = 0;
-    let slideInterval = null;
-
-    function shouldShowInaugurationPoster() {
-      return siteContent.bannerMode === "poster";
+    function resizeMemberPoster() {
+      const sliderWrap = document.querySelector(".slider-wrap");
+      sliderWrap.style.height = `${Math.min(sliderWrap.clientWidth / memberPoster.aspectRatio, 680)}px`;
     }
 
     function renderHeaderBanner() {
-      const showPoster = shouldShowInaugurationPoster();
-      const posterEl = document.getElementById("inaugurationPosterSection");
-      const sliderEl = document.getElementById("photoSliderSection");
-
-      if (showPoster) {
-        posterEl.style.display = "block";
-        sliderEl.style.display = "none";
-        if (slideInterval) clearInterval(slideInterval);
-        slideInterval = null;
-        document.querySelectorAll("#slideTrack video").forEach((video) => video.pause());
-      } else {
-        posterEl.style.display = "none";
-        sliderEl.style.display = "block";
-        renderSlides();
-      }
-    }
-
-    function getSlides() {
-      return defaultSlides;
-    }
-
-    function renderSlides() {
-      const slides = getSlides();
-      if (currentSlideIdx >= slides.length) currentSlideIdx = 0;
-
+      document.getElementById("inaugurationPosterSection").style.display = "none";
+      document.getElementById("photoSliderSection").style.display = "block";
       const track = document.getElementById("slideTrack");
-      const dots = document.getElementById("slideDots");
-
-      track.innerHTML = slides.map((s, idx) => `
-        <div class="slide-item ${s.aspectRatio ? "slide-item-contained" : ""}" data-slide-index="${idx}">
-          ${s.type === "video"
-            ? `<video controls playsinline preload="metadata" poster="${escapeHtml(s.poster)}" aria-label="${escapeHtml(s.caption)}">
-                <source src="${escapeHtml(s.video)}" type="video/mp4" />
-                Your browser does not support video playback.
-              </video>`
-            : `<img src="${escapeHtml(s.image)}" alt="${escapeHtml(s.caption)}" />`}
-          <div class="slide-caption">
-            <span>${escapeHtml(s.caption)}</span>
-            <span class="slide-tag">${escapeHtml(s.tag || "CLUB")}</span>
-          </div>
+      resizeMemberPoster();
+      track.innerHTML = `
+        <div class="slide-item slide-item-contained">
+          <img src="${escapeHtml(memberPoster.image)}" alt="${escapeHtml(memberPoster.caption)}" />
         </div>
-      `).join("");
-
-      track.querySelectorAll("video").forEach((video) => {
-        video.addEventListener("play", () => {
-          if (slideInterval) clearInterval(slideInterval);
-          slideInterval = null;
-        });
-        video.addEventListener("pause", syncSlideRotation);
-        video.addEventListener("ended", () => {
-          currentSlideIdx = (currentSlideIdx + 1) % slides.length;
-          updateSlideTransform();
-        });
-      });
-
-      dots.innerHTML = slides.map((_, idx) => `
-        <button type="button" class="slide-dot ${idx === currentSlideIdx ? "active" : ""}" data-idx="${idx}" aria-label="Slide ${idx + 1}"></button>
-      `).join("");
-
-      dots.querySelectorAll(".slide-dot").forEach((d) => {
-        d.addEventListener("click", () => {
-          currentSlideIdx = Number(d.dataset.idx);
-          updateSlideTransform();
-        });
-      });
-
-      updateSlideTransform();
-
-      syncSlideRotation();
+      `;
     }
 
-    function updateSlideTransform() {
-      const track = document.getElementById("slideTrack");
-      const dots = document.querySelectorAll(".slide-dot");
-      const activeSlide = getSlides()[currentSlideIdx];
-      const sliderWrap = document.querySelector(".slider-wrap");
-      track.querySelectorAll("video").forEach((video) => {
-        if (Number(video.closest(".slide-item").dataset.slideIndex) !== currentSlideIdx) video.pause();
-      });
-      sliderWrap.style.height = activeSlide.aspectRatio
-        ? `${Math.min(sliderWrap.clientWidth / activeSlide.aspectRatio, 680)}px`
-        : "";
-      track.style.transform = `translateX(-${currentSlideIdx * 100}%)`;
-      dots.forEach((d, i) => d.classList.toggle("active", i === currentSlideIdx));
-      syncSlideRotation();
-    }
-
-    function syncSlideRotation() {
-      if (slideInterval) clearInterval(slideInterval);
-      slideInterval = null;
-      const activeVideo = document.getElementById("slideTrack").children[currentSlideIdx].querySelector("video");
-      if (!shouldShowInaugurationPoster() && getSlides().length > 1 && (!activeVideo || activeVideo.paused)) {
-        const rotationDelay = getSlides()[currentSlideIdx].type === "video" ? 12000 : 4200;
-        slideInterval = setInterval(() => {
-          currentSlideIdx = (currentSlideIdx + 1) % getSlides().length;
-          updateSlideTransform();
-        }, rotationDelay);
-      }
-    }
-
-    window.addEventListener("resize", () => {
-      if (getSlides()[currentSlideIdx].aspectRatio) updateSlideTransform();
-    });
-
-    document.getElementById("prevSlideBtn").addEventListener("click", () => {
-      const slides = getSlides();
-      currentSlideIdx = (currentSlideIdx - 1 + slides.length) % slides.length;
-      updateSlideTransform();
-    });
-
-    document.getElementById("nextSlideBtn").addEventListener("click", () => {
-      const slides = getSlides();
-      currentSlideIdx = (currentSlideIdx + 1) % slides.length;
-      updateSlideTransform();
-    });
-
-    // Touch swipe for slideshow
-    let touchStartX = 0;
-    const sliderWrap = document.getElementById("sliderWrap");
-    sliderWrap.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
-    sliderWrap.addEventListener("touchend", (e) => {
-      const diff = e.changedTouches[0].clientX - touchStartX;
-      if (Math.abs(diff) > 40) {
-        const slides = getSlides();
-        currentSlideIdx = diff < 0
-          ? (currentSlideIdx + 1) % slides.length
-          : (currentSlideIdx - 1 + slides.length) % slides.length;
-        updateSlideTransform();
-      }
-    }, { passive: true });
+    window.addEventListener("resize", resizeMemberPoster);
 
     // Navigation
     function showPane(paneId) {
@@ -1613,7 +1476,48 @@
       if (e.target === homeScreenHelpModal) closeHomeScreenHelp();
     });
 
-    function openAnnouncementModal(force = false) {
+    async function refreshWeeklyTopperCard() {
+      const card = document.getElementById("weeklyTopperCard");
+      card.hidden = true;
+      try {
+        const winners = await window.PWCSupabase.getWeeklyTopper();
+        if (!winners.length) {
+          document.getElementById("weeklyTopperName").textContent = "No topper yet";
+          document.getElementById("weeklyTopperDistance").textContent = "No walks recorded this week.";
+          document.getElementById("weeklyTopperWeek").textContent = "";
+          card.hidden = false;
+          return;
+        }
+
+        const firstWinner = winners[0];
+        const names = winners
+          .map((winner) => String(winner.display_name || "").trim())
+          .filter(Boolean);
+        const totalKm = Number(firstWinner.total_km);
+        const weekStart = new Date(`${firstWinner.week_start}T00:00:00Z`);
+        const weekEnd = new Date(`${firstWinner.week_end}T00:00:00Z`);
+        if (!names.length || !Number.isFinite(totalKm) ||
+            Number.isNaN(weekStart.getTime()) || Number.isNaN(weekEnd.getTime()) ||
+            winners.some((winner) => Number(winner.total_km) !== totalKm)) {
+          throw new Error("The weekly topper response has invalid data.");
+        }
+
+        const formatDate = (date) => new Intl.DateTimeFormat("en", {
+          month: "short",
+          day: "numeric",
+          timeZone: "UTC"
+        }).format(date);
+        document.getElementById("weeklyTopperName").textContent = names.join(", ");
+        document.getElementById("weeklyTopperDistance").textContent = `${totalKm.toFixed(2)} km`;
+        document.getElementById("weeklyTopperWeek").textContent =
+          `${formatDate(weekStart)} – ${formatDate(weekEnd)}`;
+        card.hidden = false;
+      } catch (error) {
+        displayBackendError("Could not load weekly topper", error);
+      }
+    }
+
+    async function openAnnouncementModal(force = false) {
       annState = { ...defaultAnnouncement, ...siteContent.announcement };
       if (!force && !annState.enabled) return;
 
@@ -1633,6 +1537,7 @@
       learnMoreButton.textContent = annState.primaryLabel || "Learn More";
       learnMoreButton.style.display = annState.linkUrl ? "" : "none";
       document.querySelector(".ann-actions").classList.toggle("single-action", !annState.linkUrl);
+      await refreshWeeklyTopperCard();
       annModal.classList.add("open");
     }
 
@@ -1643,7 +1548,9 @@
     document.getElementById("closeAnnX").addEventListener("click", closeAnnouncementModal);
     document.getElementById("annDismissBtn").addEventListener("click", closeAnnouncementModal);
     annModal.addEventListener("click", (e) => { if (e.target === annModal) closeAnnouncementModal(); });
-    document.getElementById("reopenNoticeBtn").addEventListener("click", () => openAnnouncementModal(true));
+    document.getElementById("reopenNoticeBtn").addEventListener("click", () => {
+      void openAnnouncementModal(true);
+    });
 
     document.getElementById("annLearnMoreBtn").addEventListener("click", () => {
       if (annState.linkUrl && annState.linkUrl.trim()) {
@@ -1657,79 +1564,8 @@
     // Admin Panel Logic
     const adminEditorBox = document.getElementById("adminEditorBox");
 
-    function renderAdminSlidesList() {
-      const container = document.getElementById("adminSlidesList");
-      container.innerHTML = siteContent.slides.map((s) => `
-        <div class="slide-admin-row">
-          <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-            <img class="slide-thumb" src="${escapeHtml(s.image)}" alt="" />
-            <div style="min-width:0;">
-              <div style="font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(s.caption)}</div>
-              <div style="font-size:10.5px; color:var(--muted);">${escapeHtml(s.tag || "CLUB")}</div>
-            </div>
-          </div>
-          <button type="button" class="btn-soft" style="padding:4px 8px; font-size:11px; color:#B91C1C;" data-slide-id="${escapeHtml(s.id)}">Remove</button>
-        </div>
-      `).join("");
-      container.querySelectorAll("[data-slide-id]").forEach((button) => {
-        button.addEventListener("click", () => { void deleteSlide(button.dataset.slideId); });
-      });
-    }
-
-    async function deleteSlide(id) {
-      const previousSlides = siteContent.slides;
-      siteContent.slides = siteContent.slides.filter((slide) => String(slide.id) !== id);
-      try {
-        await saveSiteContent();
-        renderAdminSlidesList();
-        renderHeaderBanner();
-        document.getElementById("adminSaveStatus").textContent = "Poster removed.";
-      } catch (error) {
-        siteContent.slides = previousSlides;
-        renderAdminSlidesList();
-        displayBackendError("Could not remove poster", error);
-      }
-    }
-
-    document.getElementById("addSlideBtn").addEventListener("click", async () => {
-      const caption = document.getElementById("newSlideCaption").value.trim() || "Parammal Walking Club Activity";
-      const tag = document.getElementById("newSlideTag").value.trim() || "WARD WALK";
-      const urlVal = document.getElementById("newSlideUrl").value.trim();
-
-      let photoUrl;
-      try {
-        photoUrl = parseHttpUrl(urlVal);
-      } catch (error) {
-        document.getElementById("adminSaveStatus").textContent = error.message || "Enter a valid image URL.";
-        return;
-      }
-
-      siteContent.slides.push({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        image: photoUrl.href,
-        caption,
-        tag
-      });
-      try {
-        await saveSiteContent();
-        document.getElementById("newSlideCaption").value = "";
-        document.getElementById("newSlideTag").value = "";
-        document.getElementById("newSlideUrl").value = "";
-        renderAdminSlidesList();
-        renderHeaderBanner();
-        document.getElementById("adminSaveStatus").textContent = "New photo added to slideshow!";
-      } catch (error) {
-        siteContent.slides.pop();
-        displayBackendError("Could not save poster", error);
-      }
-    });
-
     function populateAdminForm() {
       const s = siteContent.announcement;
-      document.getElementById("bannerModeSelect").value = siteContent.bannerMode;
-      document.getElementById("bannerStatusHint").textContent =
-        `Automatic mode rotates posters one by one. The inauguration poster can be shown manually.`;
-
       document.getElementById("annEnabledToggle").checked = Boolean(s.enabled);
       document.getElementById("annTitleEn").value = s.titleEn;
       document.getElementById("annTitleMl").value = s.titleMl;
@@ -1737,7 +1573,6 @@
       document.getElementById("annMsgMl").value = s.msgMl;
       document.getElementById("annPrimaryLabel").value = s.primaryLabel;
       document.getElementById("annLinkUrl").value = s.linkUrl || "";
-      renderAdminSlidesList();
     }
 
     function openAdminPanel() {
@@ -1795,7 +1630,6 @@
       try {
         siteContent = {
           ...siteContent,
-          bannerMode: document.getElementById("bannerModeSelect").value,
           announcement: collectAnnouncementFromForm()
         };
         await saveSiteContent();
@@ -1811,7 +1645,7 @@
     document.getElementById("previewAnnBtn").addEventListener("click", () => {
       try {
         annState = collectAnnouncementFromForm();
-        openAnnouncementModal(true);
+        void openAnnouncementModal(true);
       } catch (error) {
         document.getElementById("adminSaveStatus").textContent = error.message;
       }
@@ -2413,7 +2247,7 @@
         } else if (authResult === "verified") {
           showHomeScreenHelp();
         } else {
-          openAnnouncementModal(false);
+          await openAnnouncementModal(false);
         }
         if (window.location.hash.toLowerCase() === "#admin") openAdminPanel();
         if (authResult === "verified") showAppStatus("Sign-in successful.");

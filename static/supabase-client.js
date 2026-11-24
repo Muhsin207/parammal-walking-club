@@ -118,7 +118,12 @@
   async function currentMember() {
     await ensureSupabaseReady();
     const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError) throw normalizeSupabaseError(authError, "authentication");
+    if (authError) {
+      if (authError.name === "AuthSessionMissingError") {
+        throw makeError("Sign in is required.", 401);
+      }
+      throw normalizeSupabaseError(authError, "authentication");
+    }
     const user = authData.user;
     if (!user) throw makeError("Sign in is required.", 401);
 

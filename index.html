@@ -1270,7 +1270,7 @@
         <button type="button" class="login-tab" id="registerTab" data-login-tab="register">Create Account</button>
       </div>
       <p style="font-size:11px; line-height:1.45; color:var(--muted); margin-bottom:12px;">
-        Member display names and walk dates, routes, and distances are visible publicly. After the Supabase move, choose Create Account and set a new password with your mobile number; old passwords are not transferred. Existing walk records stay in public history but are not linked to new personal progress. Mobile numbers are not SMS-verified, and password recovery requires help from an administrator.
+        Your walk records are private to your account. After the Supabase move, choose Create Account and set a new password with your mobile number; old passwords are not transferred. Older walk records are not linked to new accounts and will not appear in personal history. Mobile numbers are not SMS-verified, and password recovery requires help from an administrator.
       </p>
 
       <form id="memberLoginForm">
@@ -1290,7 +1290,7 @@
       <form id="memberRegisterForm" style="display:none;">
         <div style="display:grid; gap:10px;">
           <div>
-            <label for="registerName">Public display name</label>
+            <label for="registerName">Display name</label>
             <input type="text" id="registerName" autocomplete="name" required />
           </div>
           <div>
@@ -1303,7 +1303,7 @@
           </div>
           <label style="display:flex; align-items:flex-start; gap:7px; font-size:11px; line-height:1.4;">
             <input type="checkbox" id="registerPublicConsent" required style="width:auto; margin-top:2px;" />
-            I agree that my display name and walk records will be public.
+            I agree that my walk records will be private to my account.
           </label>
           <button type="submit" class="btn-maroon" style="width:100%;">Create account</button>
         </div>
@@ -1875,7 +1875,7 @@
       const goal = Math.min(500, Math.max(5, parseFloat(fGoal.value) || 30));
       const member = getSessionMember();
       renderRoutes(logs);
-      const progressLogs = member ? logs.filter((item) => item.memberId === member.id) : logs;
+      const progressLogs = member ? logs.filter((item) => item.memberId === member.id) : [];
       const todayIso = getTodayLocalISO();
       const today = new Date(`${todayIso}T00:00:00`);
       const weekStart = new Date(today);
@@ -1895,7 +1895,7 @@
       weekEnd.setDate(weekStart.getDate() + 6);
       const dateLabel = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
 
-      document.getElementById("progressTitle").textContent = member ? "My Weekly Walking Progress" : "Club Weekly Walking Progress";
+      document.getElementById("progressTitle").textContent = member ? "My Weekly Walking Progress" : "Sign in to view your progress";
       document.getElementById("weeklyRange").textContent = `${dateLabel.format(weekStart)} - ${dateLabel.format(weekEnd)}`;
       document.getElementById("weeklyTotal").textContent = weeklyKm.toFixed(2);
       document.getElementById("weeklyGoalDisplay").textContent = `${weeklyGoal.toFixed(1)} km`;
@@ -1926,7 +1926,8 @@
 
       const histEl = document.getElementById("historyContainer");
       if (!logs.length) {
-        histEl.innerHTML = `<p style="font-size:12.5px; color:var(--muted); text-align:center; padding:16px 0;">No walk entries yet.</p>`;
+        const message = member ? "No walk entries yet." : "Sign in to view your private walk history.";
+        histEl.innerHTML = `<p style="font-size:12.5px; color:var(--muted); text-align:center; padding:16px 0;">${message}</p>`;
         return;
       }
 
@@ -2290,6 +2291,9 @@
       } catch (error) {
         if (error.status !== 401) throw error;
         currentMember = null;
+        cachedLogs = [];
+        hasMoreWalkLogs = false;
+        renderStats(cachedLogs);
         localStorage.removeItem("pwc_admin_route_after_auth");
         fName.value = "";
         fName.readOnly = true;
@@ -2305,12 +2309,18 @@
         return;
       }
 
+      const accountChanged = currentMember && currentMember.id !== profile.id;
       currentMember = {
         id: profile.id,
         name: profile.name,
         isAdmin: profile.isAdmin,
         monthlyGoal: Number(profile.monthlyGoal || 30)
       };
+      if (accountChanged) {
+        cachedLogs = [];
+        hasMoreWalkLogs = false;
+        renderStats(cachedLogs);
+      }
       fName.value = currentMember.name;
       fName.readOnly = true;
       fGoal.value = String(currentMember.monthlyGoal);

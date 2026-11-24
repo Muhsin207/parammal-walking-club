@@ -481,13 +481,17 @@ def update_my_settings():
 
 @app.get("/api/walks")
 def list_walks():
+    member, error = require_member()
+    if error:
+        return error
+
     try:
         limit = min(500, max(1, int(request.args.get("limit", "100"))))
         offset = max(0, int(request.args.get("offset", "0")))
     except ValueError:
         return api_error("Limit and offset must be integers.", 400)
 
-    query = WalkLog.query.join(Member, WalkLog.member_id == Member.id)
+    query = WalkLog.query.filter(WalkLog.member_id == member.id).join(Member, WalkLog.member_id == Member.id)
     total = query.count()
     rows = query.order_by(
         WalkLog.walk_date.desc(),

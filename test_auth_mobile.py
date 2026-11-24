@@ -96,6 +96,54 @@ class MobileAuthTests(TestCase):
         restored_client.set_cookie("pwc_session", session_cookie.value)
         self.assertEqual(restored_client.get("/api/auth/me").status_code, 200)
 
+    def test_walk_history_requires_login_and_is_limited_to_the_owner(self):
+        first_walk = {
+            "route": "School loop",
+            "km": 1.25,
+            "mins": 20,
+            "date": "2026-11-24",
+        }
+        self.assertEqual(
+            self.client.post(
+                "/api/auth/register",
+                json={
+                    "mobile": "9876543210",
+                    "password": "first-password-123",
+                    "displayName": "First Walker",
+                },
+            ).status_code,
+            200,
+        )
+        self.assertEqual(self.client.post("/api/walks", json=first_walk).status_code, 201)
+
+        second_client = app.test_client()
+        self.assertEqual(
+            second_client.post(
+                "/api/auth/register",
+                json={
+                    "mobile": "9123456789",
+                    "password": "second-password-123",
+                    "displayName": "Second Walker",
+                },
+            ).status_code,
+            200,
+        )
+        self.assertEqual(
+            second_client.post(
+                "/api/walks",
+                json={**first_walk, "route": "Park loop"},
+            ).status_code,
+            201,
+        )
+
+        self.assertEqual(app.test_client().get("/api/walks").status_code, 401)
+        first_history = self.client.get("/api/walks").get_json()
+        second_history = second_client.get("/api/walks").get_json()
+        self.assertEqual(first_history["total"], 1)
+        self.assertEqual(first_history["items"][0]["name"], "First Walker")
+        self.assertEqual(second_history["total"], 1)
+        self.assertEqual(second_history["items"][0]["name"], "Second Walker")
+
     def test_development_secret_key_is_stable_across_restarts(self):
         secret_key_path = Path(_test_directory.name) / "development.secret_key"
 

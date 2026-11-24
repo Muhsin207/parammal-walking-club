@@ -230,6 +230,7 @@
 
   const walkPageSize = 500;
   let walkLogCursor = null;
+  let walkLogMemberId = null;
   let walkLogsHaveMore = false;
 
   function walkLogFromRow(row) {
@@ -246,9 +247,10 @@
     };
   }
 
-  async function loadWalkPage(cursor) {
+  async function loadWalkPage(cursor, memberId) {
     let query = supabase.from("walk_logs")
       .select("id,member_id,name,route,km,mins,date,created_at")
+      .eq("member_id", memberId)
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(walkPageSize + 1);
@@ -265,23 +267,55 @@
   async function loadLogs() {
     await ensureSupabaseReady();
     walkLogCursor = null;
+    walkLogMemberId = null;
     walkLogsHaveMore = false;
-    return loadWalkPage(null);
+    let member;
+    try {
+      member = await currentMember();
+    } catch (error) {
+      if (error.status === 401) return { items: [], hasMore: false };
+      throw error;
+    }
+    walkLogMemberId = member.id;
+    return loadWalkPage(null, member.id);
   }
 
   async function loadMoreLogs() {
     await ensureSupabaseReady();
-    if (!walkLogCursor || !walkLogsHaveMore) return { items: [], hasMore: false };
-    return loadWalkPage(walkLogCursor);
+    if (!walkLogCursor || !walkLogsHaveMore || !walkLogMemberId) {
+      return { items: [], hasMore: false };
+    }
+    let member;
+    try {
+      member = await currentMember();
+    } catch (error) {
+      if (error.status === 401) {
+        walkLogCursor = null;
+        walkLogMemberId = null;
+        walkLogsHaveMore = false;
+        return { items: [], hasMore: false };
+      }
+      throw error;
+    }
+    if (member.id !== walkLogMemberId) return loadLogs();
+    return loadWalkPage(walkLogCursor, member.id);
   }
 
   async function loadAllLogs() {
     await ensureSupabaseReady();
+    let member;
+    try {
+      member = await currentMember();
+    } catch (error) {
+      if (error.status === 401) return [];
+      throw error;
+    }
     const rows = [];
     let from = 0;
     while (true) {
       const { data, error } = await supabase.from("walk_logs")
         .select("id,member_id,name,route,km,mins,date,created_at")
+        .eq("member_id", member.id)
         .order("date", { ascending: false })
         .order("created_at", { ascending: false })
         .range(from, from + walkPageSize - 1);

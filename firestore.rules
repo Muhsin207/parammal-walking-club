@@ -32,7 +32,7 @@ service cloud.firestore {
     }
 
     match /walkLogs/{walkId} {
-      allow read: if true;
+      allow read: if signedIn() && resource.data.memberId == request.auth.uid;
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
           'memberId', 'name', 'route', 'km', 'mins', 'date', 'createdAt'

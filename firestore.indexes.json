@@ -4,6 +4,7 @@
       "collectionGroup": "walkLogs",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "memberId", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]

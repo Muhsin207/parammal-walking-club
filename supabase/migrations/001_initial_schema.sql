@@ -19,6 +19,8 @@ create table if not exists public.walk_logs (
 
 create index if not exists walk_logs_date_created_idx
   on public.walk_logs (date desc, created_at desc);
+create index if not exists walk_logs_member_date_created_idx
+  on public.walk_logs (member_id, date desc, created_at desc);
 
 create table if not exists public.site_content (
   id text primary key,
@@ -52,7 +54,7 @@ grant select on public.profiles to authenticated;
 grant insert on public.profiles to authenticated;
 grant update (monthly_goal) on public.profiles to authenticated;
 
-grant select on public.walk_logs to anon, authenticated;
+grant select on public.walk_logs to authenticated;
 grant insert on public.walk_logs to authenticated;
 grant select on public.site_content to anon, authenticated;
 grant insert, update, delete on public.site_content to authenticated;
@@ -117,8 +119,9 @@ create trigger enforce_profile_updates
   for each row execute function public.enforce_profile_updates();
 
 drop policy if exists "walk_logs_public_read" on public.walk_logs;
-create policy "walk_logs_public_read" on public.walk_logs
-  for select using (true);
+drop policy if exists "walk_logs_select_own" on public.walk_logs;
+create policy "walk_logs_select_own" on public.walk_logs
+  for select using (auth.uid() = member_id);
 
 drop policy if exists "walk_logs_insert_own" on public.walk_logs;
 create policy "walk_logs_insert_own" on public.walk_logs

@@ -288,6 +288,7 @@
 
   const walkPageSize = 500;
   let walkLogCursor = null;
+  let walkLogMemberId = null;
   let walkLogsHaveMore = false;
 
   function walkLogFromDocument(document) {
@@ -307,8 +308,9 @@
     };
   }
 
-  function walkLogsQuery(cursor, limit) {
+  function walkLogsQuery(cursor, limit, memberId) {
     let query = firestore.collection("walkLogs")
+      .where("memberId", "==", memberId)
       .orderBy("date", "desc")
       .orderBy("createdAt", "desc")
       .limit(limit);
@@ -316,8 +318,8 @@
     return query;
   }
 
-  async function loadWalkPage(cursor) {
-    const page = await walkLogsQuery(cursor, walkPageSize + 1).get();
+  async function loadWalkPage(cursor, memberId) {
+    const page = await walkLogsQuery(cursor, walkPageSize + 1, memberId).get();
     const visibleDocuments = page.docs.slice(0, walkPageSize);
     walkLogCursor = visibleDocuments.length
       ? visibleDocuments[visibleDocuments.length - 1]
@@ -332,22 +334,38 @@
   async function loadLogs() {
     await ensureFirebaseReady();
     walkLogCursor = null;
+    walkLogMemberId = null;
     walkLogsHaveMore = false;
-    return loadWalkPage(null);
+    const memberId = auth.currentUser && auth.currentUser.uid;
+    if (!memberId) return { items: [], hasMore: false };
+    walkLogMemberId = memberId;
+    return loadWalkPage(null, memberId);
   }
 
   async function loadMoreLogs() {
     await ensureFirebaseReady();
-    if (!walkLogCursor || !walkLogsHaveMore) return { items: [], hasMore: false };
-    return loadWalkPage(walkLogCursor);
+    if (!walkLogCursor || !walkLogsHaveMore || !walkLogMemberId) {
+      return { items: [], hasMore: false };
+    }
+    const memberId = auth.currentUser && auth.currentUser.uid;
+    if (!memberId) {
+      walkLogCursor = null;
+      walkLogMemberId = null;
+      walkLogsHaveMore = false;
+      return { items: [], hasMore: false };
+    }
+    if (memberId !== walkLogMemberId) return loadLogs();
+    return loadWalkPage(walkLogCursor, memberId);
   }
 
   async function loadAllLogs() {
     await ensureFirebaseReady();
+    const memberId = auth.currentUser && auth.currentUser.uid;
+    if (!memberId) return [];
     const rows = [];
     let cursor = null;
     while (true) {
-      const page = await walkLogsQuery(cursor, walkPageSize).get();
+      const page = await walkLogsQuery(cursor, walkPageSize, memberId).get();
       rows.push(...page.docs.map(walkLogFromDocument));
       if (page.docs.length < walkPageSize) return rows;
       cursor = page.docs[page.docs.length - 1];

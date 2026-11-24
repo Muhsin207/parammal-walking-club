@@ -54,6 +54,20 @@
     return data;
   }
 
+  async function getPublicLeaderboard() {
+    await ensureSupabaseReady();
+    const { data, error } = await supabase.rpc("get_public_leaderboard");
+    if (error) {
+      if (error.code === "PGRST202") {
+        console.error("Supabase leaderboard is unavailable until migration 006 is applied.", error);
+        throw makeError("Leaderboard setup is incomplete. Run supabase/migrations/006_public_leaderboard.sql.", 503);
+      }
+      throw normalizeSupabaseError(error, "public leaderboard");
+    }
+    if (!Array.isArray(data)) throw makeError("Unexpected public leaderboard response.", 500);
+    return data;
+  }
+
   function normalizedMobile(value) {
     const mobile = String(value || "").replace(/\D/g, "");
     return /^[6-9]\d{9}$/.test(mobile) ? mobile : null;
@@ -247,6 +261,31 @@
   let walkLogMemberId = null;
   let walkLogsHaveMore = false;
 
+  function normalizeGpsPath(value) {
+    if (value == null) return null;
+    if (!Array.isArray(value) || value.length < 2 || value.length > 2000) {
+      throw makeError("GPS route must contain between 2 and 2,000 points.", 400);
+    }
+    return value.map((point) => {
+      if (!Array.isArray(point) || point.length !== 2 ||
+          typeof point[0] !== "number" || typeof point[1] !== "number" ||
+          !Number.isFinite(point[0]) || !Number.isFinite(point[1]) ||
+          point[0] < -90 || point[0] > 90 || point[1] < -180 || point[1] > 180) {
+        throw makeError("GPS route contains an invalid coordinate.", 400);
+      }
+      return [point[0], point[1]];
+    });
+  }
+
+  function normalizeWalkError(error, operation) {
+    if (/gps_path/i.test(String(error.message || "")) &&
+        /column|schema cache|could not find/i.test(String(error.message || ""))) {
+      console.error(`Supabase ${operation} requires migration 005 for private GPS tracks.`, error);
+      return makeError("Private GPS track setup is incomplete. Run supabase/migrations/005_private_gps_tracks.sql.", 503);
+    }
+    return normalizeSupabaseError(error, operation);
+  }
+
   function walkLogFromRow(row) {
     const createdAt = row.created_at ? Date.parse(row.created_at) : Date.parse(row.date);
     return {
@@ -257,20 +296,21 @@
       km: Number(row.km),
       mins: Number(row.mins),
       date: row.date,
-      createdAt
+      createdAt,
+      gpsPath: normalizeGpsPath(row.gps_path)
     };
   }
 
   async function loadWalkPage(cursor, memberId) {
     let query = supabase.from("walk_logs")
-      .select("id,member_id,name,route,km,mins,date,created_at")
+      .select("id,member_id,name,route,km,mins,date,created_at,gps_path")
       .eq("member_id", memberId)
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(walkPageSize + 1);
     if (cursor) query = query.range(cursor, cursor + walkPageSize);
     const { data, error } = await query;
-    if (error) throw normalizeSupabaseError(error, "walk history");
+    if (error) throw normalizeWalkError(error, "walk history");
     const visibleRows = data.slice(0, walkPageSize);
     const nextCursor = cursor ? cursor + walkPageSize : walkPageSize;
     walkLogCursor = nextCursor;
@@ -328,12 +368,12 @@
     let from = 0;
     while (true) {
       const { data, error } = await supabase.from("walk_logs")
-        .select("id,member_id,name,route,km,mins,date,created_at")
+        .select("id,member_id,name,route,km,mins,date,created_at,gps_path")
         .eq("member_id", member.id)
         .order("date", { ascending: false })
         .order("created_at", { ascending: false })
         .range(from, from + walkPageSize - 1);
-      if (error) throw normalizeSupabaseError(error, "walk export");
+      if (error) throw normalizeWalkError(error, "walk export");
       rows.push(...data);
       if (data.length < walkPageSize) return rows.map(walkLogFromRow);
       from += walkPageSize;
@@ -359,17 +399,27 @@
         Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) {
       throw makeError("Enter a valid walk date.", 400);
     }
+    const gpsPath = normalizeGpsPath(log.gpsPath);
     const { data, error } = await supabase.from("walk_logs").insert({
       member_id: member.id,
       name: member.name,
       route,
       km: Math.round(distance * 100) / 100,
       mins: minutes,
-      date
+      date,
+      gps_path: gpsPath
     }).select("id").single();
-    if (error) throw normalizeSupabaseError(error, "walk creation");
+    if (error) throw normalizeWalkError(error, "walk creation");
     return { id: String(data.id) };
   }
 
-  window.PWCSupabase = { apiRequest, getWeeklyTopper, loadLogs, loadMoreLogs, loadAllLogs, createWalk };
+  window.PWCSupabase = {
+    apiRequest,
+    getWeeklyTopper,
+    getPublicLeaderboard,
+    loadLogs,
+    loadMoreLogs,
+    loadAllLogs,
+    createWalk
+  };
 })();

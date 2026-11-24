@@ -291,6 +291,22 @@
   let walkLogMemberId = null;
   let walkLogsHaveMore = false;
 
+  function normalizeGpsPath(value) {
+    if (value == null) return null;
+    if (!Array.isArray(value) || value.length < 2 || value.length > 2000) {
+      throw makeError("GPS route must contain between 2 and 2,000 points.", 400);
+    }
+    return value.map((point) => {
+      if (!Array.isArray(point) || point.length !== 2 ||
+          typeof point[0] !== "number" || typeof point[1] !== "number" ||
+          !Number.isFinite(point[0]) || !Number.isFinite(point[1]) ||
+          point[0] < -90 || point[0] > 90 || point[1] < -180 || point[1] > 180) {
+        throw makeError("GPS route contains an invalid coordinate.", 400);
+      }
+      return [point[0], point[1]];
+    });
+  }
+
   function walkLogFromDocument(document) {
     const data = document.data();
     const createdAt = data.createdAt && typeof data.createdAt.toMillis === "function"
@@ -304,7 +320,8 @@
       km: Number(data.km),
       mins: Number(data.mins),
       date: data.date,
-      createdAt
+      createdAt,
+      gpsPath: normalizeGpsPath(data.gpsPath)
     };
   }
 
@@ -391,7 +408,8 @@
         Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) {
       throw makeError("Enter a valid walk date.", 400);
     }
-    const result = await firestore.collection("walkLogs").add({
+    const gpsPath = normalizeGpsPath(log.gpsPath);
+    const walk = {
       memberId: member.id,
       name: member.name,
       route,
@@ -399,7 +417,9 @@
       mins: minutes,
       date,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    if (gpsPath) walk.gpsPath = gpsPath;
+    const result = await firestore.collection("walkLogs").add(walk);
     return { id: result.id };
   }
 

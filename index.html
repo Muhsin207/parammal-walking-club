@@ -517,13 +517,44 @@
       flex-wrap: wrap;
     }
 
-    #wardMap {
+    #wardMap,
+    #historyMap {
       height: 320px;
       width: 100%;
       border-radius: 14px;
       border: 1px solid var(--border);
       z-index: 1;
     }
+
+    .leaderboard-periods {
+      display: flex;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .leaderboard-period.active {
+      background: var(--maroon);
+      color: #fff;
+    }
+
+    .leaderboard-row {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .leaderboard-rank {
+      color: var(--maroon);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .leaderboard-name { font-weight: 800; }
+    .leaderboard-meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .leaderboard-distance { color: var(--maroon); font-weight: 800; white-space: nowrap; }
 
     /* Form & Admin Controls */
     .grid-2 {
@@ -766,6 +797,15 @@
       font-size: 11px;
     }
 
+    .weekly-topper-greeting {
+      margin-top: 10px;
+      padding-top: 9px;
+      border-top: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff8dc;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
     .home-screen-help-copy {
       margin-bottom: 16px;
       color: #FFE484;
@@ -831,7 +871,7 @@
       background: #fff;
       border-top: 1px solid var(--border);
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       padding: 7px 4px calc(7px + env(safe-area-inset-bottom));
       z-index: 60;
     }
@@ -936,6 +976,8 @@
     @media (max-width: 440px) {
       .grid-2 { grid-template-columns: 1fr; }
       .stat-num { font-size: 16px; }
+      .nav-btn { font-size: 9px; }
+      .nav-ico { font-size: 15px; }
     }
   </style>
 </head>
@@ -1068,6 +1110,14 @@
     <div id="pane-history" class="tab-pane">
       <section class="card">
         <div class="card-head">
+          <div class="card-title">My GPS Walk Routes</div>
+        </div>
+        <p style="font-size:11.5px; line-height:1.5; color:var(--muted); margin-bottom:9px;">
+          GPS routes from your Live GPS walks are private to your account. Manual walk entries do not include a route.
+        </p>
+        <div id="historyMap" role="application" aria-label="Map of my saved GPS walking routes"></div>
+        <p id="historyMapStatus" role="status" style="font-size:11px; color:var(--muted); margin:7px 0 14px;"></p>
+        <div class="card-head">
           <div class="card-title">Walk History</div>
           <button type="button" class="btn-soft" id="exportCsvBtn" style="padding:6px 10px; font-size:11.5px;">Export CSV</button>
         </div>
@@ -1139,7 +1189,40 @@
       </section>
     </div>
 
-    <!-- TAB 5: WARD INFO -->
+    <!-- TAB 5: LEADERBOARD -->
+    <div id="pane-leaderboard" class="tab-pane">
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">Walking Leaderboard</div>
+        </div>
+        <p style="font-size:11.5px; line-height:1.5; color:var(--muted);">
+          Public totals show display names, distance, and walk counts only. GPS routes and individual history are not shared here.
+        </p>
+        <div class="leaderboard-periods" role="group" aria-label="Leaderboard period">
+          <button type="button" class="btn-soft leaderboard-period active" data-leaderboard-period="weekly">This week</button>
+          <button type="button" class="btn-soft leaderboard-period" data-leaderboard-period="all-time">All time</button>
+        </div>
+        <div id="leaderboardList" aria-live="polite"></div>
+        <p id="leaderboardStatus" role="status" style="font-size:11px; color:var(--muted); margin-top:8px;"></p>
+      </section>
+    </div>
+
+    <!-- TAB 6: NOTIFICATIONS -->
+    <div id="pane-notifications" class="tab-pane">
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">Walk Reminders</div>
+        </div>
+        <p style="font-size:12px; line-height:1.55; color:var(--muted); margin-bottom:10px;">
+          The daily walk starts at 9:15 PM. With your permission, this device can remind you at 8:45 PM (Asia/Kolkata).
+          The app must be open; reminders do not arrive after you close it.
+        </p>
+        <button type="button" class="btn-maroon" id="toggleWalkRemindersBtn" aria-pressed="false">Enable walk reminders</button>
+        <p id="notificationStatus" role="status" style="font-size:11px; color:var(--muted); margin-top:8px;"></p>
+      </section>
+    </div>
+
+    <!-- TAB 7: WARD INFO -->
     <div id="pane-ward" class="tab-pane">
       <section class="card">
         <div class="card-head">
@@ -1228,6 +1311,7 @@
         <div id="weeklyTopperName" class="weekly-topper-name"></div>
         <div id="weeklyTopperDistance" class="weekly-topper-distance"></div>
         <div id="weeklyTopperWeek" class="weekly-topper-week"></div>
+        <div id="weeklyTopperGreeting" class="weekly-topper-greeting" lang="ml"></div>
       </div>
 
       <p class="ann-body-en" id="annModalBodyEn"></p>
@@ -1258,6 +1342,14 @@
       <span class="nav-ico">📈</span>
       <span>Progress</span>
     </button>
+    <button type="button" class="nav-btn" data-target="pane-leaderboard">
+      <span class="nav-ico">🏆</span>
+      <span>Leaders</span>
+    </button>
+    <button type="button" class="nav-btn" data-target="pane-notifications">
+      <span class="nav-ico">🔔</span>
+      <span>Notify</span>
+    </button>
     <button type="button" class="nav-btn" data-target="pane-ward">
       <span class="nav-ico">ⓘ</span>
       <span>Ward Info</span>
@@ -1274,7 +1366,7 @@
         <button type="button" class="login-tab" id="registerTab" data-login-tab="register">Create Account</button>
       </div>
       <p style="font-size:11px; line-height:1.45; color:var(--muted); margin-bottom:12px;">
-        Your individual walk history is private to your account. The weekly topper’s display name and total distance are shared publicly. After the Supabase move, choose Create Account and set a new password with your mobile number; old passwords are not transferred. Older walk records are not linked to new accounts and will not appear in personal history. Mobile numbers are not SMS-verified, and password recovery requires help from an administrator.
+        Your individual history and saved GPS routes are private to your account. The public leaderboard shares your display name, weekly and all-time distance, and walk counts. After the Supabase move, choose Create Account and set a new password with your mobile number; old passwords are not transferred. Older walk records are not linked to new accounts and will not appear in personal history. Mobile numbers are not SMS-verified, and password recovery requires help from an administrator.
       </p>
 
       <form id="memberLoginForm">
@@ -1307,7 +1399,7 @@
           </div>
           <label style="display:flex; align-items:flex-start; gap:7px; font-size:11px; line-height:1.4;">
             <input type="checkbox" id="registerPublicConsent" required style="width:auto; margin-top:2px;" />
-            I understand my walk history is private, but the weekly topper’s name and total distance are announced publicly.
+            I understand my walk history and GPS routes are private, and that my display name, weekly and all-time distance, and walk counts appear on the public leaderboard.
           </label>
           <button type="submit" class="btn-maroon" style="width:100%;">Create account</button>
         </div>
@@ -1443,12 +1535,221 @@
       if (paneId === "pane-track" && map) {
         setTimeout(() => map.invalidateSize(), 120);
       }
-      if (paneId === "pane-history") refreshStats();
+      if (paneId === "pane-history") {
+        void refreshStats().then(() => setTimeout(() => {
+          if (historyMap) {
+            historyMap.invalidateSize();
+            renderHistoryMap(cachedLogs);
+          }
+        }, 120));
+      }
+      if (paneId === "pane-leaderboard") void refreshLeaderboard();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     document.querySelectorAll(".nav-btn").forEach((btn) => {
       btn.addEventListener("click", () => showPane(btn.dataset.target));
+    });
+
+    let leaderboardPeriod = "weekly";
+    let cachedLeaderboard = [];
+
+    function renderLeaderboard() {
+      const list = document.getElementById("leaderboardList");
+      const status = document.getElementById("leaderboardStatus");
+      const weekly = leaderboardPeriod === "weekly";
+      const entries = cachedLeaderboard
+        .filter((entry) => !weekly || entry.weeklyWalks > 0)
+        .sort((a, b) => {
+          const aDistance = weekly ? a.weeklyKm : a.allTimeKm;
+          const bDistance = weekly ? b.weeklyKm : b.allTimeKm;
+          const aWalks = weekly ? a.weeklyWalks : a.allTimeWalks;
+          const bWalks = weekly ? b.weeklyWalks : b.allTimeWalks;
+          return bDistance - aDistance || bWalks - aWalks || a.displayName.localeCompare(b.displayName);
+        });
+
+      if (!entries.length) {
+        list.innerHTML = "";
+        status.textContent = weekly
+          ? "No walks have been recorded this week yet."
+          : "No walk records are available yet.";
+        return;
+      }
+
+      status.textContent = "";
+      list.innerHTML = entries.map((entry, index) => {
+        const distance = weekly ? entry.weeklyKm : entry.allTimeKm;
+        const walks = weekly ? entry.weeklyWalks : entry.allTimeWalks;
+        return `
+          <div class="leaderboard-row">
+            <span class="leaderboard-rank">${index + 1}</span>
+            <div>
+              <div class="leaderboard-name">${escapeHtml(entry.displayName)}</div>
+              <div class="leaderboard-meta">${walks} ${walks === 1 ? "walk" : "walks"}</div>
+            </div>
+            <span class="leaderboard-distance">${distance.toFixed(2)} km</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function refreshLeaderboard() {
+      const list = document.getElementById("leaderboardList");
+      const status = document.getElementById("leaderboardStatus");
+      list.innerHTML = "";
+      status.textContent = "Loading leaderboard…";
+      try {
+        const rows = await window.PWCSupabase.getPublicLeaderboard();
+        cachedLeaderboard = rows.map((row) => {
+          const entry = {
+            displayName: String(row.display_name || "").trim(),
+            weeklyKm: Number(row.weekly_km),
+            weeklyWalks: Number(row.weekly_walks),
+            allTimeKm: Number(row.all_time_km),
+            allTimeWalks: Number(row.all_time_walks)
+          };
+          if (!entry.displayName ||
+              !Number.isFinite(entry.weeklyKm) || entry.weeklyKm < 0 ||
+              !Number.isInteger(entry.weeklyWalks) || entry.weeklyWalks < 0 ||
+              !Number.isFinite(entry.allTimeKm) || entry.allTimeKm < 0 ||
+              !Number.isInteger(entry.allTimeWalks) || entry.allTimeWalks < 0) {
+            throw new Error("The leaderboard response contains invalid data.");
+          }
+          return entry;
+        });
+        renderLeaderboard();
+      } catch (error) {
+        cachedLeaderboard = [];
+        status.textContent = error.message || "Could not load the leaderboard.";
+        console.error("Could not load leaderboard", error);
+      }
+    }
+
+    document.querySelectorAll("[data-leaderboard-period]").forEach((button) => {
+      button.addEventListener("click", () => {
+        leaderboardPeriod = button.dataset.leaderboardPeriod;
+        document.querySelectorAll("[data-leaderboard-period]").forEach((item) => {
+          item.classList.toggle("active", item === button);
+        });
+        renderLeaderboard();
+      });
+    });
+
+    const walkReminderEnabledKey = "pwc_walk_reminders_enabled";
+    let walkReminderInFlight = false;
+
+    function updateWalkReminderControl() {
+      const button = document.getElementById("toggleWalkRemindersBtn");
+      const status = document.getElementById("notificationStatus");
+      const enabled = localStorage.getItem(walkReminderEnabledKey) === "true" &&
+        "Notification" in window && Notification.permission === "granted";
+      button.textContent = enabled ? "Turn off walk reminders" : "Enable walk reminders";
+      button.setAttribute("aria-pressed", String(enabled));
+      if (!("Notification" in window)) {
+        status.textContent = "This browser does not support notifications.";
+      } else if (Notification.permission === "denied") {
+        status.textContent = "Notifications are blocked in browser settings. Allow them there to enable reminders.";
+      } else if (enabled) {
+        status.textContent = "Daily reminder enabled on this device. Keep the app open around 8:45 PM.";
+      } else {
+        status.textContent = "Reminders are off. Enable them here and allow browser notifications.";
+      }
+    }
+
+    function kolkataClockParts() {
+      const parts = new Intl.DateTimeFormat("en", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(new Date()).reduce((result, part) => {
+        result[part.type] = part.value;
+        return result;
+      }, {});
+      return {
+        date: `${parts.year}-${parts.month}-${parts.day}`,
+        minuteOfDay: Number(parts.hour) * 60 + Number(parts.minute)
+      };
+    }
+
+    async function checkWalkReminder() {
+      if (localStorage.getItem(walkReminderEnabledKey) !== "true" ||
+          !("Notification" in window) || Notification.permission !== "granted") return;
+
+      const { date, minuteOfDay } = kolkataClockParts();
+      const reminderMinute = 20 * 60 + 45;
+      const walkMinute = 21 * 60 + 15;
+      if (minuteOfDay < reminderMinute || minuteOfDay >= walkMinute ||
+          localStorage.getItem(`pwc_walk_reminder_sent_${date}`) === "true" ||
+          walkReminderInFlight) return;
+
+      walkReminderInFlight = true;
+      try {
+        const title = "നമ്മുടെ നടത്തം 30 മിനിറ്റിനകം!";
+        const options = {
+          body: "ഇന്ന് രാത്രി 9:15-ന് നടത്തം തുടങ്ങും. തയ്യാറാകൂ; ആരോഗ്യത്തോടെ നടക്കാം!",
+          icon: "/static/posters/parammal-walking-club-logo.jpg"
+        };
+        if ("serviceWorker" in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+          if (typeof registration.showNotification === "function") {
+            await registration.showNotification(title, options);
+          } else {
+            new Notification(title, options);
+          }
+        } else {
+          new Notification(title, options);
+        }
+        localStorage.setItem(`pwc_walk_reminder_sent_${date}`, "true");
+      } catch (error) {
+        console.error("Could not show the daily walk reminder.", error);
+        document.getElementById("notificationStatus").textContent =
+          `Could not show the reminder: ${error.message || "browser notification error"}`;
+      } finally {
+        walkReminderInFlight = false;
+      }
+    }
+
+    document.getElementById("toggleWalkRemindersBtn").addEventListener("click", async () => {
+      if (!("Notification" in window)) {
+        updateWalkReminderControl();
+        return;
+      }
+      if (localStorage.getItem(walkReminderEnabledKey) === "true" &&
+          Notification.permission === "granted") {
+        localStorage.removeItem(walkReminderEnabledKey);
+        updateWalkReminderControl();
+        return;
+      }
+      try {
+        const permission = Notification.permission === "granted"
+          ? "granted"
+          : await Notification.requestPermission();
+        if (permission !== "granted") {
+          updateWalkReminderControl();
+          document.getElementById("notificationStatus").textContent =
+            "Browser permission was not granted. You can enable it later in browser settings.";
+          return;
+        }
+        localStorage.setItem(walkReminderEnabledKey, "true");
+        updateWalkReminderControl();
+        await checkWalkReminder();
+      } catch (error) {
+        console.error("Could not enable walk reminders.", error);
+        document.getElementById("notificationStatus").textContent =
+          `Could not enable reminders: ${error.message || "browser notification error"}`;
+      }
+    });
+
+    updateWalkReminderControl();
+    void checkWalkReminder();
+    window.setInterval(() => { void checkWalkReminder(); }, 30000);
+    window.addEventListener("focus", () => { void checkWalkReminder(); });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) void checkWalkReminder();
     });
 
     // Optional Announcement Modal
@@ -1476,9 +1777,27 @@
       if (e.target === homeScreenHelpModal) closeHomeScreenHelp();
     });
 
+    function renderWeeklyTopperGreeting() {
+      const hour = Number(new Intl.DateTimeFormat("en", {
+        timeZone: "Asia/Kolkata",
+        hour: "numeric",
+        hourCycle: "h23"
+      }).format(new Date()));
+      const greeting = hour < 12 ? "സുപ്രഭാതം!" : hour < 16 ? "ശുഭ മധ്യാഹ്നം!" : "ശുഭ സായാഹ്നം!";
+      const motivations = [
+        "ഓരോ ചെറിയ ചുവടും ആരോഗ്യത്തിലേക്കുള്ള വലിയ മുന്നേറ്റമാണ്.",
+        "ഇന്ന് നടന്ന ദൂരം മാത്രമല്ല, എടുത്ത തീരുമാനമാണ് വിജയത്തിന്റെ തുടക്കം.",
+        "നടക്കുമ്പോൾ മനസ്സും ശരീരവും ഒരുപോലെ ഉണരുന്നു.",
+        "ആരോഗ്യത്തിനായി സ്ഥിരമായി നടക്കൂ; ഓരോ ദിവസവും പുതുമയോടെ തുടങ്ങൂ."
+      ];
+      const motivation = motivations[Math.floor(Math.random() * motivations.length)];
+      document.getElementById("weeklyTopperGreeting").textContent = `${greeting} ${motivation}`;
+    }
+
     async function refreshWeeklyTopperCard() {
       const card = document.getElementById("weeklyTopperCard");
       card.hidden = true;
+      renderWeeklyTopperGreeting();
       try {
         const winners = await window.PWCSupabase.getWeeklyTopper();
         if (!winners.length) {
@@ -1657,6 +1976,8 @@
     let walkerMarker = null;
     let routeLine = null;
     let routeCoords = [defaultLatLng];
+    let historyMap = null;
+    let historyTrackLayers = null;
 
     if (typeof L !== "undefined") {
       map = L.map("wardMap", { zoomControl: true }).setView(defaultLatLng, 15);
@@ -1673,6 +1994,12 @@
       }).addTo(map).bindPopup("Legacy AUP School, Parammal").openPopup();
 
       routeLine = L.polyline(routeCoords, { color: "#2563EB", weight: 4 }).addTo(map);
+
+      historyMap = L.map("historyMap", { zoomControl: true }).setView(defaultLatLng, 13);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(historyMap);
+      historyTrackLayers = L.layerGroup().addTo(historyMap);
     }
 
     // Stats & Logging
@@ -1694,6 +2021,39 @@
       }[m]));
     }
 
+    function renderHistoryMap(logs) {
+      const status = document.getElementById("historyMapStatus");
+      if (!historyMap || !historyTrackLayers) {
+        status.textContent = "The map is unavailable because its map library did not load.";
+        return;
+      }
+
+      historyTrackLayers.clearLayers();
+      const trackedLogs = logs.filter((log) => Array.isArray(log.gpsPath) && log.gpsPath.length >= 2);
+      const bounds = L.latLngBounds([]);
+      trackedLogs.forEach((log, index) => {
+        const path = log.gpsPath;
+        const line = L.polyline(path, {
+          color: ["#781042", "#2563EB", "#15803D", "#D97706"][index % 4],
+          weight: 4
+        }).addTo(historyTrackLayers);
+        line.bindPopup(
+          `<strong>${escapeHtml(log.route)}</strong><br>${escapeHtml(log.date)} · ${log.km.toFixed(2)} km`
+        );
+        bounds.extend(path);
+      });
+
+      if (trackedLogs.length) {
+        historyMap.fitBounds(bounds, { padding: [18, 18], maxZoom: 16 });
+        status.textContent = `${trackedLogs.length} private GPS ${trackedLogs.length === 1 ? "route" : "routes"} shown.`;
+      } else {
+        historyMap.setView(defaultLatLng, 13);
+        status.textContent = getSessionMember()
+          ? "No GPS routes saved yet. Start a Live GPS walk to record a route."
+          : "Sign in to view your private GPS walk routes.";
+      }
+    }
+
     const fDate = document.getElementById("fDate");
     const fName = document.getElementById("fName");
     const fGoal = document.getElementById("fGoal");
@@ -1709,6 +2069,7 @@
       const goal = Math.min(500, Math.max(5, parseFloat(fGoal.value) || 30));
       const member = getSessionMember();
       renderRoutes(logs);
+      renderHistoryMap(logs);
       const progressLogs = member ? logs.filter((item) => item.memberId === member.id) : [];
       const todayIso = getTodayLocalISO();
       const today = new Date(`${todayIso}T00:00:00`);
@@ -1889,6 +2250,8 @@
         renderStats(cachedLogs);
       } catch (error) {
         displayBackendError("Could not load walk records", error);
+        document.getElementById("historyMapStatus").textContent =
+          error.message || "Could not load your private GPS routes.";
       }
     }
 
@@ -1975,6 +2338,15 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
+    function recordGpsPoint(point) {
+      const lastPoint = routeCoords[routeCoords.length - 1];
+      if (lastPoint && distKm(lastPoint[0], lastPoint[1], point[0], point[1]) < 0.003) return;
+      if (routeCoords.length >= 2000) {
+        routeCoords = routeCoords.filter((_, index) => index % 2 === 0);
+      }
+      routeCoords.push(point);
+    }
+
     const gpsBtn = document.getElementById("toggleGpsBtn");
     const gpsStatusLabel = document.getElementById("gpsStatusLabel");
 
@@ -2031,7 +2403,7 @@
             }
             gpsStatusLabel.textContent = "GPS tracking";
             const pt = [latitude, longitude];
-            routeCoords.push(pt);
+            recordGpsPoint(pt);
             if (map && walkerMarker && routeLine) {
               walkerMarker.setLatLng(pt);
               routeLine.setLatLngs(routeCoords);
@@ -2074,7 +2446,8 @@
               route: gpsRouteSelect.value || "Live GPS Walk",
               km: parseFloat(gpsKm.toFixed(2)),
               mins,
-              date: getTodayLocalISO()
+              date: getTodayLocalISO(),
+              gpsPath: routeCoords.length >= 2 ? routeCoords.slice() : null
             });
             await refreshStats();
             gpsStatusLabel.textContent = "Walk saved. Open History to view it.";

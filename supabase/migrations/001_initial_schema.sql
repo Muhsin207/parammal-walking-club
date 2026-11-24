@@ -14,7 +14,15 @@ create table if not exists public.walk_logs (
   km numeric(6,2) not null check (km between 0.05 and 100),
   mins integer not null check (mins between 1 and 600),
   date date not null,
-  created_at timestamptz not null default now()
+  gps_path jsonb,
+  created_at timestamptz not null default now(),
+  constraint walk_logs_gps_path_valid check (
+    gps_path is null or case
+      when jsonb_typeof(gps_path) = 'array'
+        then jsonb_array_length(gps_path) between 2 and 2000
+      else false
+    end
+  )
 );
 
 create index if not exists walk_logs_date_created_idx

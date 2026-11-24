@@ -35,7 +35,7 @@ service cloud.firestore {
       allow read: if signedIn() && resource.data.memberId == request.auth.uid;
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly([
-          'memberId', 'name', 'route', 'km', 'mins', 'date', 'createdAt'
+          'memberId', 'name', 'route', 'km', 'mins', 'date', 'createdAt', 'gpsPath'
         ])
         && request.resource.data.keys().hasAll([
           'memberId', 'name', 'route', 'km', 'mins', 'date', 'createdAt'
@@ -54,6 +54,10 @@ service cloud.firestore {
         && request.resource.data.mins <= 600
         && request.resource.data.date is string
         && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && (!('gpsPath' in request.resource.data)
+          || (request.resource.data.gpsPath is list
+            && request.resource.data.gpsPath.size() >= 2
+            && request.resource.data.gpsPath.size() <= 2000))
         && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
     }

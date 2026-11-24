@@ -1,4 +1,5 @@
 import hashlib
+import math
 import os
 import re
 import secrets
@@ -141,6 +142,7 @@ class WalkLog(db.Model):
     distance_km = db.Column(db.Numeric(6, 2), nullable=False)
     duration_minutes = db.Column(db.Integer, nullable=False)
     walk_date = db.Column(db.Date, nullable=False)
+    gps_path = db.Column(JSON, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     member = db.relationship(Member)
 
@@ -179,6 +181,11 @@ def initialize_database():
             db.session.execute(text("ALTER TABLE members ADD COLUMN mobile_number VARCHAR(15)"))
         if "password_hash" not in member_columns:
             db.session.execute(text("ALTER TABLE members ADD COLUMN password_hash VARCHAR(255)"))
+        walk_log_columns = {
+            row[1] for row in db.session.execute(text("PRAGMA table_info(walk_logs)")).all()
+        }
+        if "gps_path" not in walk_log_columns:
+            db.session.execute(text("ALTER TABLE walk_logs ADD COLUMN gps_path JSON"))
         db.session.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_members_mobile_number "
             "ON members(mobile_number) WHERE mobile_number IS NOT NULL"
@@ -508,6 +515,7 @@ def list_walks():
                 "km": float(row.distance_km),
                 "mins": row.duration_minutes,
                 "date": row.walk_date.isoformat(),
+                "gpsPath": row.gps_path,
             }
             for row in rows
         ],
@@ -537,12 +545,39 @@ def create_walk():
     if not 1 <= minutes <= 600:
         return api_error("Duration must be between 1 and 600 minutes.", 400)
 
+    gps_path = payload.get("gpsPath")
+    if gps_path is not None:
+        if not isinstance(gps_path, list) or not 2 <= len(gps_path) <= 2000:
+            return api_error("GPS route must contain between 2 and 2,000 points.", 400)
+        normalized_gps_path = []
+        for point in gps_path:
+            if (
+                not isinstance(point, list)
+                or len(point) != 2
+                or any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in point)
+            ):
+                return api_error("GPS route contains an invalid coordinate.", 400)
+            try:
+                latitude, longitude = float(point[0]), float(point[1])
+            except (OverflowError, ValueError):
+                return api_error("GPS route contains an invalid coordinate.", 400)
+            if (
+                not math.isfinite(latitude)
+                or not math.isfinite(longitude)
+                or not -90 <= latitude <= 90
+                or not -180 <= longitude <= 180
+            ):
+                return api_error("GPS route contains an invalid coordinate.", 400)
+            normalized_gps_path.append([latitude, longitude])
+        gps_path = normalized_gps_path
+
     row = WalkLog(
         member_id=member.id,
         route=route,
         distance_km=round(distance, 2),
         duration_minutes=minutes,
         walk_date=walk_date,
+        gps_path=gps_path,
     )
     db.session.add(row)
     db.session.commit()

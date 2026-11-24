@@ -102,6 +102,7 @@ class MobileAuthTests(TestCase):
             "km": 1.25,
             "mins": 20,
             "date": "2026-11-24",
+            "gpsPath": [[10.9579, 76.3481], [10.9581, 76.3484]],
         }
         self.assertEqual(
             self.client.post(
@@ -114,6 +115,10 @@ class MobileAuthTests(TestCase):
             ).status_code,
             200,
         )
+        invalid_walk = {**first_walk, "gpsPath": [[10.9579, 76.3481]]}
+        self.assertEqual(self.client.post("/api/walks", json=invalid_walk).status_code, 400)
+        invalid_walk = {**first_walk, "gpsPath": [[91, 76.3481], [10.9581, 76.3484]]}
+        self.assertEqual(self.client.post("/api/walks", json=invalid_walk).status_code, 400)
         self.assertEqual(self.client.post("/api/walks", json=first_walk).status_code, 201)
 
         second_client = app.test_client()
@@ -131,7 +136,11 @@ class MobileAuthTests(TestCase):
         self.assertEqual(
             second_client.post(
                 "/api/walks",
-                json={**first_walk, "route": "Park loop"},
+                json={
+                    **first_walk,
+                    "route": "Park loop",
+                    "gpsPath": [[10.9600, 76.3500], [10.9610, 76.3510]],
+                },
             ).status_code,
             201,
         )
@@ -141,8 +150,13 @@ class MobileAuthTests(TestCase):
         second_history = second_client.get("/api/walks").get_json()
         self.assertEqual(first_history["total"], 1)
         self.assertEqual(first_history["items"][0]["name"], "First Walker")
+        self.assertEqual(first_history["items"][0]["gpsPath"], first_walk["gpsPath"])
         self.assertEqual(second_history["total"], 1)
         self.assertEqual(second_history["items"][0]["name"], "Second Walker")
+        self.assertNotEqual(
+            second_history["items"][0]["gpsPath"],
+            first_history["items"][0]["gpsPath"],
+        )
 
     def test_development_secret_key_is_stable_across_restarts(self):
         secret_key_path = Path(_test_directory.name) / "development.secret_key"

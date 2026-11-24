@@ -8,9 +8,10 @@ The web app uses Supabase Auth and Postgres for authentication, profiles, walk h
 2. In **Authentication -> Providers -> Email**, enable the Email provider.
 3. In **Authentication -> Settings**, disable confirmation of new email addresses. The app uses internal mobile aliases rather than real inboxes.
 4. Run `supabase/migrations/001_initial_schema.sql` in the Supabase SQL editor.
-5. Copy the Project URL and publishable/anon key into `static/supabase-config.js`.
-6. Run `python build_firebase.py` to generate the static `dist` folder.
-7. Deploy `dist` to the selected static host.
+5. Run `supabase/migrations/002_profile_bootstrap.sql` in the SQL editor. This also repairs existing projects: it grants the profile permissions, creates profiles automatically for new signups, and backfills existing auth users whose profiles are missing. If `001_initial_schema.sql` was already applied, run `002_profile_bootstrap.sql` only.
+6. Copy the Project URL and publishable/anon key into `static/supabase-config.js`.
+7. Run `python build_firebase.py` to generate the static `dist` folder.
+8. Deploy `dist` to the selected static host.
 
 The GitHub repository is `https://github.com/Muhsin207/parammal-walking-club`.
 

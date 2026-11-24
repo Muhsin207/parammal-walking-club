@@ -161,13 +161,6 @@
         });
         if (error) throw normalizeSupabaseError(error, "registration");
         if (!data.user) throw makeError("Check the account confirmation setting in Supabase Auth.", 400);
-
-        const { error: profileError } = await supabase.from("profiles").insert({
-          id: data.user.id,
-          display_name: displayName,
-          monthly_goal: 30
-        });
-        if (profileError) throw normalizeSupabaseError(profileError, "profile creation");
         return currentMember();
       }
 

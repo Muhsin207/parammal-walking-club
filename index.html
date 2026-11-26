@@ -973,6 +973,51 @@
       line-height: 1.5;
     }
 
+    .saved-toast {
+      position: fixed;
+      z-index: 20;
+      left: 50%;
+      bottom: calc(20px + env(safe-area-inset-bottom));
+      transform: translate(-50%, 12px);
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: var(--maroon-dark);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+    }
+
+    .saved-toast.visible {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    .goal-setting {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .goal-setting label {
+      grid-column: 1 / -1;
+      margin: 0;
+    }
+
+    .goal-setting input {
+      min-width: 0;
+    }
+
+    .goal-setting .btn-maroon {
+      width: auto;
+      white-space: nowrap;
+    }
+
     @media (max-width: 440px) {
       .grid-2 { grid-template-columns: 1fr; }
       .stat-num { font-size: 16px; }
@@ -1043,6 +1088,7 @@
 
   <main class="main">
     <div id="appStatus" class="app-status" role="status" style="display:none;"></div>
+    <div id="walkSavedToast" class="saved-toast" role="status" aria-live="polite" hidden></div>
 
     <!-- TAB 1: TRACK -->
     <div id="pane-track" class="tab-pane active">
@@ -1055,7 +1101,13 @@
           <button type="button" class="btn-gold" id="toggleGpsBtn">Login to Start Walking</button>
         </div>
         <label for="gpsRouteSelect">Walking place / route</label>
-        <select id="gpsRouteSelect" style="margin-bottom:10px;"></select>
+        <select id="gpsRouteSelect" style="margin-bottom:10px;">
+          <option value="Legacy AUP School Loop, Parammal">Legacy AUP School Loop, Parammal</option>
+          <option value="Legacy AUP School to Palode Town">Legacy AUP School to Palode Town</option>
+          <option value="Parammal - Thachanattukara Road">Parammal - Thachanattukara Road</option>
+          <option value="Morning Ward Walk">Morning Ward Walk</option>
+          <option value="Evening Neighbourhood Walk">Evening Neighbourhood Walk</option>
+        </select>
         <div id="wardMap"></div>
         <div style="font-size:11.5px; color:var(--muted); margin-top:7px;">
           Keep this page open while walking. Steps are estimated from GPS distance, not counted by your phone's pedometer.
@@ -1064,44 +1116,15 @@
 
       <section class="card">
         <div class="card-head">
-          <div class="card-title">Log Walk Distance</div>
+          <div class="card-title">Set Walking Goal</div>
         </div>
-        <form id="walkForm" novalidate>
-          <div class="grid-2">
-            <div>
-              <label for="fName">Walker Name</label>
-              <input type="text" id="fName" placeholder="Your name" required />
-            </div>
-            <div>
-              <label for="fRoute">Ward Route</label>
-              <select id="fRoute">
-                <option value="Legacy AUP School Loop, Parammal">Legacy AUP School Loop, Parammal</option>
-                <option value="Legacy AUP School to Palode Town">Legacy AUP School to Palode Town</option>
-                <option value="Parammal - Thachanattukara Road">Parammal - Thachanattukara Road</option>
-                <option value="Morning Ward Walk">Morning Ward Walk</option>
-                <option value="Evening Neighbourhood Walk">Evening Neighbourhood Walk</option>
-              </select>
-            </div>
-            <div>
-              <label for="fKm">Distance (km)</label>
-              <input type="number" id="fKm" step="0.05" min="0.05" max="100" placeholder="e.g., 1.50" required />
-            </div>
-            <div>
-              <label for="fMins">Duration (mins)</label>
-              <input type="number" id="fMins" min="1" max="600" placeholder="e.g., 20" required />
-            </div>
-            <div>
-              <label for="fDate">Date</label>
-              <input type="date" id="fDate" required />
-            </div>
-            <div>
-              <label for="fGoal">Monthly Goal (km)</label>
-              <input type="number" id="fGoal" min="5" max="500" value="30" />
-            </div>
-          </div>
-          <div style="margin-top:10px;">
-            <button type="submit" class="btn-maroon" style="width:100%;">Save Walk</button>
-          </div>
+        <p style="font-size:11.5px; line-height:1.5; color:var(--muted);">
+          Only completed GPS-tracked walks are saved to your history and counted toward your progress.
+        </p>
+        <form id="goalForm" class="goal-setting">
+          <label for="fGoal">Monthly walking goal (5–500 km)</label>
+          <input type="number" id="fGoal" min="5" max="500" step="0.1" value="30" required />
+          <button type="submit" class="btn-maroon">Save Goal</button>
         </form>
       </section>
     </div>
@@ -1113,7 +1136,7 @@
           <div class="card-title">My GPS Walk Routes</div>
         </div>
         <p style="font-size:11.5px; line-height:1.5; color:var(--muted); margin-bottom:9px;">
-          GPS routes from your Live GPS walks are private to your account. Manual walk entries do not include a route.
+          Routes from your GPS-tracked walks are private to your account.
         </p>
         <div id="historyMap" role="application" aria-label="Map of my saved GPS walking routes"></div>
         <p id="historyMapStatus" role="status" style="font-size:11px; color:var(--muted); margin:7px 0 14px;"></p>
@@ -1459,6 +1482,22 @@
       const status = document.getElementById("appStatus");
       status.textContent = message;
       status.style.display = "block";
+    }
+
+    let walkSavedToastTimer = null;
+
+    function showSuccessToast(message) {
+      const toast = document.getElementById("walkSavedToast");
+      toast.textContent = message;
+      toast.hidden = false;
+      requestAnimationFrame(() => toast.classList.add("visible"));
+      clearTimeout(walkSavedToastTimer);
+      walkSavedToastTimer = setTimeout(() => {
+        toast.classList.remove("visible");
+        walkSavedToastTimer = setTimeout(() => {
+          toast.hidden = true;
+        }, 200);
+      }, 2500);
     }
 
     async function apiRequest(path, options) {
@@ -2054,13 +2093,8 @@
       }
     }
 
-    const fDate = document.getElementById("fDate");
-    const fName = document.getElementById("fName");
     const fGoal = document.getElementById("fGoal");
 
-    fDate.valueAsDate = new Date();
-    fName.value = getSessionMember()?.name || "";
-    fName.readOnly = true;
     fGoal.value = "30";
     let cachedLogs = [];
     let hasMoreWalkLogs = false;
@@ -2165,26 +2199,23 @@
     }
 
     const gpsRouteSelect = document.getElementById("gpsRouteSelect");
-    const walkingRouteSelect = document.getElementById("fRoute");
     const routeListContainer = document.getElementById("routesContainer");
 
     function addWalkingRouteOption(route) {
-      [gpsRouteSelect, walkingRouteSelect].forEach((select) => {
-        if (![...select.options].some((option) => option.value === route)) {
-          select.add(new Option(route, route));
-        }
-      });
+      if (![...gpsRouteSelect.options].some((option) => option.value === route)) {
+        gpsRouteSelect.add(new Option(route, route));
+      }
     }
 
     function renderRoutes(logs) {
       const routes = [...new Set([
-        ...[...walkingRouteSelect.options].map((option) => option.value),
+        ...[...gpsRouteSelect.options].map((option) => option.value),
         ...logs.map((item) => item.route)
       ])];
       routes.forEach(addWalkingRouteOption);
       routeListContainer.innerHTML = routes.map((route) => {
         const walkCount = logs.filter((item) => item.route === route).length;
-        const label = walkCount ? `${walkCount} logged ${walkCount === 1 ? "walk" : "walks"}` : "Suggested route";
+        const label = walkCount ? `${walkCount} GPS ${walkCount === 1 ? "walk" : "walks"}` : "Suggested route";
         return `
           <div class="log-item">
             <div>
@@ -2203,7 +2234,6 @@
       const route = button.dataset.selectRoute;
       addWalkingRouteOption(route);
       gpsRouteSelect.value = route;
-      walkingRouteSelect.value = route;
       showPane("pane-track");
     });
 
@@ -2229,7 +2259,6 @@
       const route = `${origin} to ${destination}`;
       addWalkingRouteOption(route);
       gpsRouteSelect.value = route;
-      walkingRouteSelect.value = route;
       renderRoutes(cachedLogs);
 
       const directionsUrl = new URL("https://www.google.com/maps/dir/");
@@ -2255,38 +2284,17 @@
       }
     }
 
-    document.getElementById("walkForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    document.getElementById("goalForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
       const member = getSessionMember();
       if (!member) {
         openMemberLogin();
         return;
       }
 
-      if (!e.currentTarget.reportValidity()) return;
-
-      const name = fName.value.trim();
-      const route = document.getElementById("fRoute").value;
-      const km = parseFloat(document.getElementById("fKm").value);
-      const mins = parseInt(document.getElementById("fMins").value, 10);
-      const date = fDate.value;
-
-      if (!name || isNaN(km) || km <= 0 || isNaN(mins) || mins <= 0 || !date) return;
-
-      try {
-        await saveLog({ route, km, mins, date });
-        document.getElementById("fKm").value = "";
-        document.getElementById("fMins").value = "";
-        await refreshStats();
-      } catch (error) {
-        displayBackendError("Could not save walk", error);
-      }
-    });
-
-    fGoal.addEventListener("input", () => renderStats(cachedLogs));
-    fGoal.addEventListener("change", async () => {
-      const member = getSessionMember();
-      if (!member || !fGoal.reportValidity()) return;
+      if (!event.currentTarget.reportValidity()) return;
+      const saveButton = event.currentTarget.querySelector('button[type="submit"]');
+      saveButton.disabled = true;
       try {
         const settings = await apiRequest("/api/settings/me", {
           method: "PUT",
@@ -2294,8 +2302,11 @@
         });
         currentMember.monthlyGoal = settings.monthlyGoal;
         await refreshStats();
+        showSuccessToast("Goal saved successfully.");
       } catch (error) {
         displayBackendError("Could not save monthly goal", error);
+      } finally {
+        saveButton.disabled = false;
       }
     });
 
@@ -2451,6 +2462,7 @@
             });
             await refreshStats();
             gpsStatusLabel.textContent = "Walk saved. Open History to view it.";
+            showSuccessToast("Walk saved successfully.");
           } catch (error) {
             displayBackendError("Could not save GPS walk", error);
           }
@@ -2502,8 +2514,6 @@
         hasMoreWalkLogs = false;
         renderStats(cachedLogs);
         localStorage.removeItem("pwc_admin_route_after_auth");
-        fName.value = "";
-        fName.readOnly = true;
         fGoal.value = "30";
         document.getElementById("memberAccountBtn").textContent = "Login";
         gpsBtn.textContent = "Login to Start Walking";
@@ -2528,8 +2538,6 @@
         hasMoreWalkLogs = false;
         renderStats(cachedLogs);
       }
-      fName.value = currentMember.name;
-      fName.readOnly = true;
       fGoal.value = String(currentMember.monthlyGoal);
       document.getElementById("memberAccountBtn").textContent = `👤 ${currentMember.name}`;
       if (!isWalking) gpsBtn.textContent = "Start Live Walk";
